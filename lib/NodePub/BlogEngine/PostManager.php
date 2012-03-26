@@ -13,6 +13,7 @@ class PostManager
     protected $postIndex;
     protected $tags;
     protected $contentFilter;
+    protected $sourceFileExtension;
   
     function __construct($sourceDirs)
     {
@@ -43,6 +44,11 @@ class PostManager
         $this->contentFilter = $filter;
     }
     
+    public function setSourceFileExtension($ext)
+    {
+        $this->sourceFileExtension = $ext;
+    }
+    
     /**
      * Finds all text files in the configured posts dir(s).
      * Returns array of SplFileInfo objects.
@@ -51,7 +57,7 @@ class PostManager
     {
         $files = Finder::create()
             ->files()
-            ->name('*.txt')
+            ->name('*.' . $this->sourceFileExtension)
             ;
         
         # add all source paths to the finder
@@ -89,7 +95,7 @@ class PostManager
                 $parser = new Parser($contents);
                 $metadata = $parser->getMetadata();
 
-                $basename = $fileinfo->getBasename('.txt');
+                $basename = $fileinfo->getBasename('.' . $this->sourceFileExtension);
 
                 preg_match('/(\d{4})-(\d{2})-(\d{2})-(.+)/', $basename, $matches);
 
@@ -299,7 +305,7 @@ class PostManager
             $fileName = sprintf('%s/%s.%s', 
                 $this->sourceDirs[0],
                 $file->slug,
-                'txt'
+                $this->sourceFileExtension
             );
         }
         
