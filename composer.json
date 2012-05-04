@@ -1,0 +1,17 @@
+{
+    "name": "nodepub/blog-engine",
+    "type": "library",
+    "description": "Simple static-file blog engine",
+    "keywords": ["blog"],
+    "homepage": "https://github.com/nodepub/BlogEngine",
+    "license": "MIT",
+    "authors": [
+        {"name": "Andrew Gruner", "email": "andrew.gruner@gmail.com"}
+    ],
+    "require": {
+        "php": ">=5.3.2"
+    },
+    "autoload": {
+        "psr-0": { "NodePub\\BlogEngine": "lib/" }
+    }
+}
