@@ -24,19 +24,22 @@ class Post
     protected $content,
               $contentFilter;
 
-    function __construct(array $attributes = array())
+    function __construct(object $propertyObj)
     {
-        // set default attributs
+        // set default properties
         $this->tags = new ArrayCollection();
         $this->timestamp = new \DateTime("now");
         
-        // set given attributes
-        foreach ($attributes as $name => $value) {
-            $setter = 'set'.$name;
+        $reflectionClass = new ReflectionClass($propertyObj);
+        $properties = $reflectionClass->getProperties();
+        
+        // set given properties
+        foreach ($properties as $key => $property) {
+            $setter = 'set'.$key;
             if (method_exists($this, $setter)) {
                 $this->{$setter}($value);
             } else {
-                $this->{$name} = $value;
+                $this->{$key} = $property;
             }
         }
     }
