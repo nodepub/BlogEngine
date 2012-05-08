@@ -101,7 +101,7 @@ class PostManager
      * Get the first 8 chars of the hashed permalink,
      * used as a post id
      */
-    public function hashPermalink(string $permalink)
+    public function hashPermalink($permalink)
     {
         return substr(sha1($permalink), 0, 8);
     }
@@ -123,18 +123,18 @@ class PostManager
                 preg_match('/(\d{4})-(\d{2})-(\d{2})-(.+)/', $basename, $matches);
                 
                 $parser = new Parser($contents);
-                $metadata = (object) $parser->getMetadata();
-                $metadata->year = $matches[1];
-                $metadata->month = $matches[2];
-                $metadata->day = $matches[3];
-                $metadata->slug = $matches[4];
-                $metadata->timestamp = strtotime($metadata->year.'-'.$metadata->month.'-'.$metadata->day);
-                $metadata->permalink = $metadata->year.'/'.$metadata->month.'/'.$metadata->slug;
-                $metadata->id = $this->hashPermalink($metadata->permalink);
-                $metadata->filepath = $fileinfo->getRealPath();
-                $metadata->filename = $basename;
+                $postInfo = (object) $parser->getMetadata();
+                $postInfo->year = $matches[1];
+                $postInfo->month = $matches[2];
+                $postInfo->day = $matches[3];
+                $postInfo->slug = $matches[4];
+                $postInfo->timestamp = strtotime($postInfo->year.'-'.$postInfo->month.'-'.$postInfo->day);
+                $postInfo->permalink = $postInfo->year.'/'.$postInfo->month.'/'.$postInfo->slug;
+                $postInfo->id = $this->hashPermalink($postInfo->permalink);
+                $postInfo->filepath = $fileinfo->getRealPath();
+                $postInfo->filename = $fileinfo->getBasename();
 
-                $posts[] = $metadata;
+                $posts[$postInfo->id] = $postInfo;
             }
 
             $this->postIndex = new ArrayCollection($posts);
@@ -175,13 +175,13 @@ class PostManager
      * 
      * @return Post
      */
-    public function findPostById($id)
+    public function findById($id)
     {
         $index = $this->getPostIndex();
         $postMeta = $index->get($id);
         
         if ($postMeta) {
-            $fileinfo = new \SplFileInfo($postMeta->filename);
+            $fileinfo = new \SplFileInfo($postMeta->filepath);
             $parser = new Parser($this->readFile($fileinfo));
             
             $post = new Post($postMeta);
@@ -191,7 +191,7 @@ class PostManager
                 $post->setContentFilter($this->contentFilter);
             }
 
-            list($prev, $next) = $this->getPrevAndNextPosts($permalink);
+            list($prev, $next) = $this->findPrevAndNextPosts($id);
             $post->prev = $prev;
             $post->next = $next;
             
@@ -202,9 +202,9 @@ class PostManager
     /**
      * Searches for a post by permalink
      */
-    public function findPostByPermalink($permalink)
+    public function findByPermalink($permalink)
     {
-        return $this->findPostById($this->hashPermalink($permalink));
+        return $this->findById($this->hashPermalink($permalink));
     }
 
     /**
@@ -242,7 +242,7 @@ class PostManager
         $posts = array();
 
         foreach ($postCollection as $id => $values) {
-            $posts[] = $this->findPostById($id);
+            $posts[] = $this->findById($id);
         }
 
         return $posts;
@@ -304,14 +304,19 @@ class PostManager
         return $this->tags;
     }
     
-    public function renamePost(Post $post, $newName)
+    public function renamePostFile(Post $post, $newPath = null)
     {
-        rename($post->filepath,'newfilename');
-    }
-    
-    public function createPost(Post $post, $fileContent)
-    {
+        $currentPath = $post->filepath;
+        $newPath = isset($newPath) ? $newPath : $this->prepareFilePath($post, dirname($currentPath));
         
+        try {
+            rename($currentPath, $newPath);
+            $post->filepath = $newPath;
+            
+            return $post;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
     
     /**
@@ -319,9 +324,15 @@ class PostManager
      */
     public function savePost(Post $post, $fileContent)
     {
-        $filename = $this->getFilePathOrCreate($post);
+        if (isset($post->filepath)) {
+            if ($this->hasRenamedFileProperties($post)) {
+                $post = $this->renamePostFile($post);
+            }
+        } else {
+            $post->filepath = $this->prepareFilePath($post);
+        }
         
-        $file = new \SplFileObject($fileName, 'w+');
+        $file = new \SplFileObject($post->filepath, 'w+');
         
         # write the content to the file
         # if file doesn't exist, it gets created
@@ -338,28 +349,33 @@ class PostManager
     }
     
     /**
-     * Gets a post's filename if it exists,
-     * otherwise creates the filename
+     * Tests if any of the Post's properties that determine
+     * filename have changed by comparing the current path
+     * against the 
      */
-    protected function getFilePathOrCreate($post)
+    protected function hasRenamedFileProperties(Post $post)
     {
-        if (isset($post->filepath)) {
-            $filepath = $post->filepath;
-            // see if a 
-        } elseif (isset($post->filename)) {
-            
-        } else {
-            # @TODO: refactor to allow different filename/permalink schemas
-            $filepath = sprintf('%s/%s-%s-%s.%s',
-                $this->sourceDirs[0],
-                $post->year,
-                $post->month,
-                $post->slug,
-                $this->sourceFileExtension
-            );
+        return ($post->filepath != $this->prepareFilePath($post));
+    }
+    
+    /**
+     * Creates the full file pathname for a Post
+     * 
+     * @TODO: refactor to allow different filename/permalink schemas
+     */
+    protected function prepareFilePath(Post $post, $dir = null)
+    {
+        if (is_null($dir) || !is_dir($dir)) {
+            $dir = $this->sourceDirs[0];
         }
         
-        return $filepath;
+        return sprintf('%s/%s-%s-%s.%s',
+            $dir,
+            $post->year,
+            $post->month,
+            $post->slug,
+            $this->sourceFileExtension
+        );
     }
     
     /**
@@ -367,10 +383,9 @@ class PostManager
      */
     public function deletePost(Post $post)
     {
-        $postFile = '';
-        if (is_file($postFile)) {
+        if (is_file($post->filepath)) {
             try {
-                unlink($postFile);
+                unlink($post->filepath);
                 return true;
             } catch (Exception $e) {
                 return false;

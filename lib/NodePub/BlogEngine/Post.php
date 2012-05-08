@@ -32,14 +32,11 @@ class Post
         
         if (!is_object($propertyObj)) return;
         
-        $reflectionClass = new ReflectionClass($propertyObj);
-        $properties = $reflectionClass->getProperties();
-        
         // set given properties
-        foreach ($properties as $key => $property) {
+        foreach ($propertyObj as $key => $property) {
             $setter = 'set'.$key;
             if (method_exists($this, $setter)) {
-                $this->{$setter}($value);
+                $this->{$setter}($property);
             } else {
                 $this->{$key} = $property;
             }
