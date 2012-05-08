@@ -9,7 +9,8 @@ use Doctrine\Common\Collections\ArrayCollection;
  */
 class Post
 {
-    public $title,
+    public $id,
+           $title,
            $slug,
            $filename,
            $rawContent,
@@ -29,6 +30,9 @@ class Post
         // set default properties
         $this->tags = new ArrayCollection();
         $this->timestamp = new \DateTime("now");
+        $this->year = $this->timestamp->format('Y');
+        $this->month = $this->timestamp->format('m');
+        $this->day = $this->timestamp->format('d');
         
         if (!is_object($propertyObj)) return;
         
@@ -69,7 +73,7 @@ class Post
         return $this->content;
     }
     
-    public function setTags(array $tags)
+    public function setTags(array $tags = array())
     {
         $this->tags = new ArrayCollection($tags);
     }

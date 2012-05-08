@@ -98,8 +98,8 @@ class PostManager
     }
     
     /**
-     * Get the first 8 chars of the hashed permalink,
-     * used as a post id
+     * Get the first 8 chars of the hashed permalink
+     * to use as an id
      */
     public function hashPermalink($permalink)
     {
@@ -287,14 +287,11 @@ class PostManager
             foreach ($this->getPostIndex() as $postMeta) {
                 if (!array_key_exists('tags', $postMeta)) continue;
                 $taggings = $postMeta['tags'];
-                foreach ($taggings as $tag)
-                {
-                    if (array_key_exists($tag, $this->tags))
-                    {
+                foreach ($taggings as $tag) {
+                    if (array_key_exists($tag, $this->tags)) {
                         $this->tags[$tag]++;
                     }
-                    else
-                    {
+                    else {
                         $this->tags[$tag] = 1;
                     }
                 }
@@ -315,7 +312,7 @@ class PostManager
             
             return $post;
         } catch (\Exception $e) {
-            return false;
+            return $e;
         }
     }
     
@@ -327,31 +324,36 @@ class PostManager
         if (isset($post->filepath)) {
             if ($this->hasRenamedFileProperties($post)) {
                 $post = $this->renamePostFile($post);
+                if ($post instanceof \Exception) {
+                    return $post;
+                }
             }
         } else {
             $post->filepath = $this->prepareFilePath($post);
         }
         
-        $file = new \SplFileObject($post->filepath, 'w+');
-        
-        # write the content to the file
-        # if file doesn't exist, it gets created
         try {
-            $file->rewind();
-            $file->fwrite($fileContent);
-            $file->fflush();
+            # write the content to the file
+            # if file doesn't exist, it gets created
+            $result = file_put_contents($post->filepath, $fileContent);
             
-            return $post;
+            if (false === $result) {
+                return new \Exception('File could not be written');
+            } else {
+                # TODO: find better way to manage adding and removing from the index
+                $post->permalink = $post->year.'/'.$post->month.'/'.$post->slug;
+                $post->id = $this->hashPermalink($post->permalink);
+                $post->filename = basename($post->filepath);
+                
+                return $post;
+            }
         } catch (\Exception $e) {
-            # @TODO
-            return null;
+            return $e;
         }
     }
     
     /**
-     * Tests if any of the Post's properties that determine
-     * filename have changed by comparing the current path
-     * against the 
+     * Tests if any of the Post's properties that determine filename have changed
      */
     protected function hasRenamedFileProperties(Post $post)
     {
@@ -361,7 +363,7 @@ class PostManager
     /**
      * Creates the full file pathname for a Post
      * 
-     * @TODO: refactor to allow different filename/permalink schemas
+     * @TODO: refactor to allow different filename schemas
      */
     protected function prepareFilePath(Post $post, $dir = null)
     {
@@ -369,10 +371,11 @@ class PostManager
             $dir = $this->sourceDirs[0];
         }
         
-        return sprintf('%s/%s-%s-%s.%s',
+        return sprintf('%s/%s-%s-%s-%s.%s',
             $dir,
             $post->year,
             $post->month,
+            $post->day,
             $post->slug,
             $this->sourceFileExtension
         );
@@ -387,7 +390,7 @@ class PostManager
             try {
                 unlink($post->filepath);
                 return true;
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 return false;
             }
         }
