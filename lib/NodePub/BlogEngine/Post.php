@@ -24,11 +24,13 @@ class Post
     protected $content,
               $contentFilter;
 
-    function __construct(object $propertyObj)
+    function __construct($propertyObj = null)
     {
         // set default properties
         $this->tags = new ArrayCollection();
         $this->timestamp = new \DateTime("now");
+        
+        if (!is_object($propertyObj)) return;
         
         $reflectionClass = new ReflectionClass($propertyObj);
         $properties = $reflectionClass->getProperties();
