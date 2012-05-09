@@ -365,7 +365,7 @@ class PostManager
      * 
      * @TODO: refactor to allow different filename schemas
      */
-    protected function prepareFilePath(Post $post, $dir = null)
+    public function prepareFilePath(Post $post, $dir = null)
     {
         if (is_null($dir) || !is_dir($dir)) {
             $dir = $this->sourceDirs[0];
