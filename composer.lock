@@ -1,0 +1,29 @@
+{
+    "hash": "2ca0a0ad03de38ee9448448d132759c1",
+    "packages": [
+        {
+            "package": "doctrine/common",
+            "version": "2.1.x-dev",
+            "source-reference": "41794945e795e108060eddb3342c9e13524b9b3e"
+        },
+        {
+            "package": "symfony/event-dispatcher",
+            "version": "2.0.x-dev",
+            "source-reference": "v2.0.13"
+        },
+        {
+            "package": "symfony/finder",
+            "version": "2.0.x-dev",
+            "source-reference": "v2.0.13"
+        },
+        {
+            "package": "symfony/yaml",
+            "version": "2.0.x-dev",
+            "source-reference": "v2.0.12"
+        }
+    ],
+    "packages-dev": null,
+    "aliases": [
+
+    ]
+}
