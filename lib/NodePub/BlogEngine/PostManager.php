@@ -6,14 +6,30 @@ use Symfony\Component\Finder\Finder;
 use Doctrine\Common\Collections\ArrayCollection;
 use NodePub\BlogEngine\Post;
 use NodePub\BlogEngine\PostMetaParser as Parser;
+use NodePub\BlogEngine\FilenameFormatter;
+use NodePub\BlogEngine\PermalinkFormatter;
+use NodePub\BlogEngine\PostEvent;
+
 
 class PostManager
 {
+    const EVENT_PRE_CREATE = 'npblog.pre_create_file';
+    const EVENT_CREATE     = 'npblog.create_file';
+    const EVENT_PRE_SAVE   = 'npblog.pre_save_file';
+    const EVENT_SAVE       = 'npblog.save_file';
+    const EVENT_PRE_MOVE   = 'npblog.pre_move_file';
+    const EVENT_MOVE       = 'npblog.move_file';
+    const EVENT_PRE_DELETE = 'npblog.pre_delete_file';
+    const EVENT_DELETE     = 'npblog.delete_file';
+
     protected $sourceDirs;
     protected $postIndex;
     protected $tags;
     protected $contentFilter;
     protected $sourceFileExtension;
+    protected $permalinkFormatter;
+    protected $filenameFormatter;
+    protected $eventDispatcher;
   
     function __construct($sourceDirs)
     {
@@ -58,6 +74,57 @@ class PostManager
     public function setSourceFileExtension($ext)
     {
         $this->sourceFileExtension = $ext;
+    }
+
+    /**
+     * Set the object that defines and builds permalink strings
+     * from Posts
+     */
+    public function setPermalinkFormatter($formatter)
+    {
+        $this->permalinkFormatter = $formatter;
+    }
+
+    /**
+     * Gets the permalink formatter or instantiates a new one
+     */
+    public function getPermalinkFormatter()
+    {
+        if (is_null($this->permalinkFormatter)) {
+            $this->permalinkFormatter = new PermalinkFormatter();
+        }
+
+        return $this->permalinkFormatter;
+    }
+
+    public function setFilenameFormatter($formatter)
+    {
+        $this->filenameFormatter = $formatter;
+    }
+
+    public function getFilnameFormatter()
+    {
+        if (is_null($this->filenameFormatter)) {
+            $this->filenameFormatter = new FilenameFormatter(
+                $this->sourceDirs[0],
+                $this->sourceFileExtension
+            );
+        }
+
+        return $this->filenameFormatter;
+    }
+
+    public function setEventDispatcher($dispatcher)
+    {
+        $this->eventDispatcher = $dispatcher;
+    }
+
+    protected function dispatch($eventName, Post $post)
+    {
+        if (isset($this->eventDispatcher)) {
+            $event = new PostEvent($post);
+            $this->eventDispatcher->dispatch($eventName, $event);
+        }
     }
     
     /**
@@ -108,6 +175,9 @@ class PostManager
     
     /**
      * Creates an index of post metadata objects
+     * @todo cache the index as a php object with a timestamp,
+     *       compare the timestamp to the modified date of the source dir (filemtime)
+     *       to determine if reindexing is necessary
      */
     public function getPostIndex()
     {
@@ -119,17 +189,21 @@ class PostManager
                 $contents = $this->readFile($fileinfo);
                 $basename = $fileinfo->getBasename('.' . $this->sourceFileExtension);
                 
-                # @TODO: refactor to allow different filename/permalink schemas
-                preg_match('/(\d{4})-(\d{2})-(\d{2})-(.+)/', $basename, $matches);
-                
+                // preg_match('/(\d{4})-(\d{2})-(\d{2})-(.+)/', $basename, $matches);
+                // $parser = new Parser($contents);
+                // $postInfo = (object) $parser->getMetadata();
+                // $postInfo->year = $matches[1];
+                // $postInfo->month = $matches[2];
+                // $postInfo->day = $matches[3];
+                // $postInfo->slug = $matches[4];
+
                 $parser = new Parser($contents);
-                $postInfo = (object) $parser->getMetadata();
-                $postInfo->year = $matches[1];
-                $postInfo->month = $matches[2];
-                $postInfo->day = $matches[3];
-                $postInfo->slug = $matches[4];
+                $postInfo = $parser->getMetadata();
+                $filenameProperties = $this->filenameFormatter->getPostPropertiesFromFilename($fileinfo->getRealPath());
+                $postInfo = (object) array_merge($postInfo, $filenameProperties);
+
                 $postInfo->timestamp = strtotime($postInfo->year.'-'.$postInfo->month.'-'.$postInfo->day);
-                $postInfo->permalink = $postInfo->year.'/'.$postInfo->month.'/'.$postInfo->slug;
+                $postInfo->permalink = $this->permalinkFormatter->getPermalink($postInfo);
                 $postInfo->id = $this->hashPermalink($postInfo->permalink);
                 $postInfo->filepath = $fileinfo->getRealPath();
                 $postInfo->filename = $fileinfo->getBasename();
@@ -303,12 +377,16 @@ class PostManager
     
     public function renamePostFile(Post $post, $newPath = null)
     {
+        $this->dispatch(self::EVENT_PRE_MOVE, $post);
+
         $currentPath = $post->filepath;
-        $newPath = isset($newPath) ? $newPath : $this->prepareFilePath($post, dirname($currentPath));
+        $newPath = isset($newPath) ? $newPath : $this->filenameFormatter->getFilePath($post, dirname($currentPath));
         
         try {
             rename($currentPath, $newPath);
             $post->filepath = $newPath;
+
+            $this->dispatch(self::EVENT_MOVE, $post);
             
             return $post;
         } catch (\Exception $e) {
@@ -321,6 +399,9 @@ class PostManager
      */
     public function savePost(Post $post, $fileContent)
     {
+
+        $this->dispatch(self::EVENT_PRE_SAVE, $post);
+
         if (isset($post->filepath)) {
             if ($this->hasRenamedFileProperties($post)) {
                 $post = $this->renamePostFile($post);
@@ -329,7 +410,7 @@ class PostManager
                 }
             }
         } else {
-            $post->filepath = $this->prepareFilePath($post);
+            $post->filepath = $this->filenameFormatter->getFilePath($post);
         }
         
         try {
@@ -341,9 +422,11 @@ class PostManager
                 return new \Exception('File could not be written');
             } else {
                 # TODO: find better way to manage adding and removing from the index
-                $post->permalink = $post->year.'/'.$post->month.'/'.$post->slug;
+                $post->permalink = $this->permalinkFormatter->getPermalink($post);
                 $post->id = $this->hashPermalink($post->permalink);
                 $post->filename = basename($post->filepath);
+
+                $this->dispatch(self::EVENT_SAVE, $post);
                 
                 return $post;
             }
@@ -357,28 +440,7 @@ class PostManager
      */
     protected function hasRenamedFileProperties(Post $post)
     {
-        return ($post->filepath != $this->prepareFilePath($post));
-    }
-    
-    /**
-     * Creates the full file pathname for a Post
-     * 
-     * @TODO: refactor to allow different filename schemas
-     */
-    public function prepareFilePath(Post $post, $dir = null)
-    {
-        if (is_null($dir) || !is_dir($dir)) {
-            $dir = $this->sourceDirs[0];
-        }
-        
-        return sprintf('%s/%s-%s-%s-%s.%s',
-            $dir,
-            $post->year,
-            $post->month,
-            $post->day,
-            $post->slug,
-            $this->sourceFileExtension
-        );
+        return ($post->filepath != $this->filenameFormatter->getFilePath($post));
     }
     
     /**
@@ -386,9 +448,12 @@ class PostManager
      */
     public function deletePost(Post $post)
     {
+        $this->dispatch(self::EVENT_PRE_DELETE, $post);
+
         if (is_file($post->filepath)) {
             try {
                 unlink($post->filepath);
+                $this->dispatch(self::EVENT_DELETE, $post);
                 return true;
             } catch (\Exception $e) {
                 return false;
