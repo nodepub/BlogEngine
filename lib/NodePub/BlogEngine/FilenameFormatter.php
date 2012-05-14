@@ -24,7 +24,7 @@ class FilenameFormatter
     public function getFilePath(Post $post, $dir = null)
     {   
     	if (is_null($dir)) {
-    		$dir = $this->rootDir . $post->year;
+    		$dir = $this->rootDir . '/' . $post->year;
     	}
 
         return sprintf('%s/%s-%s-%s-%s.%s',

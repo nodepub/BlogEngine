@@ -3,6 +3,7 @@
 namespace NodePub\BlogEngine;
 
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use NodePub\BlogEngine\Post;
 use NodePub\BlogEngine\PostMetaParser as Parser;
@@ -102,7 +103,7 @@ class PostManager
         $this->filenameFormatter = $formatter;
     }
 
-    public function getFilnameFormatter()
+    public function getFilenameFormatter()
     {
         if (is_null($this->filenameFormatter)) {
             $this->filenameFormatter = new FilenameFormatter(
@@ -114,7 +115,7 @@ class PostManager
         return $this->filenameFormatter;
     }
 
-    public function setEventDispatcher($dispatcher)
+    public function setEventDispatcher(EventDispatcherInterface $dispatcher)
     {
         $this->eventDispatcher = $dispatcher;
     }
