@@ -119,6 +119,9 @@ class PostManager
         $this->eventDispatcher = $dispatcher;
     }
 
+    /**
+     * Dispatches a PostEvent if an eventDispatcher is set
+     */
     protected function dispatch($eventName, Post $post)
     {
         if (isset($this->eventDispatcher)) {

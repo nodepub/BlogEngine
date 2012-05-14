@@ -7,7 +7,7 @@ use NodePub\BlogEngine\Post;
 
 class PostEvent extends Event
 {
-    protected $order;
+    protected $post;
 
     public function __construct(Post $post)
     {
