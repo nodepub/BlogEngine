@@ -186,26 +186,22 @@ class PostManager
     public function getPostIndex()
     {
         if (is_null($this->postIndex)) {
+
+            # @todo load cached index file
+            # compare timestamps
+
+
             $posts = array();
             $files = $this->findFiles();
 
             foreach ($files as $fileinfo) {
                 $contents = $this->readFile($fileinfo);
                 $basename = $fileinfo->getBasename('.' . $this->sourceFileExtension);
-                
-                // preg_match('/(\d{4})-(\d{2})-(\d{2})-(.+)/', $basename, $matches);
-                // $parser = new Parser($contents);
-                // $postInfo = (object) $parser->getMetadata();
-                // $postInfo->year = $matches[1];
-                // $postInfo->month = $matches[2];
-                // $postInfo->day = $matches[3];
-                // $postInfo->slug = $matches[4];
-
                 $parser = new Parser($contents);
                 $postInfo = $parser->getMetadata();
                 $filenameProperties = $this->filenameFormatter->getPostPropertiesFromFilename($fileinfo->getRealPath());
+                
                 $postInfo = (object) array_merge($postInfo, $filenameProperties);
-
                 $postInfo->timestamp = strtotime($postInfo->year.'-'.$postInfo->month.'-'.$postInfo->day);
                 $postInfo->permalink = $this->permalinkFormatter->getPermalink($postInfo);
                 $postInfo->id = $this->hashPermalink($postInfo->permalink);
