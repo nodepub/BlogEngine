@@ -4,71 +4,98 @@ namespace NodePub\BlogEngine;
 
 class FileCache
 {
-    protected $cacheFile;
 
-    public function __construct($cacheFile)
+    private $debug;
+    private $file;
+
+    /**
+     * Constructor.
+     *
+     * @param string  $file     The absolute cache path
+     * @param Boolean $debug    Whether debugging is enabled or not
+     */
+    public function __construct($file, $debug = false)
     {
-        $this->cacheFile = $cacheFile;
+        $this->file = $file;
+        $this->debug = (Boolean) $debug;
     }
 
+    /**
+     * Loads the cache file data.
+     *
+     * @return array
+     */
     public function load()
     {
         $cacheData = null;
 
-        if (is_file($this->cacheFile)) {
-            $cacheData = require_once($this->cacheFile);
+        if (is_file($this->file)) {
+            $cacheData = require_once($this->file);
         }
 
         return $cacheData;
     }
 
+    /**
+     * Serializes data and writes it to file.
+     */
     public function dump(array $cacheData)
     {
-        $this->writeCache($this->prepareCacheData($cache));
-    }
-
-    protected function prepareCacheData($cacheData)
-    {
-        $return sprintf("<?php return json_decode(%s);", json_encode($cacheData));
+        $this->write($this->prepareCacheData($cache));
     }
 
     /**
-     * Writes the given data to the cache file.
+     * Returns true if the cache file has not been updated since the given timestamp.
      *
-     * @param string $data The data to put in cache
-     * @return boolean true if ok, otherwise false
+     * @param integer $timestamp The last time the resource was loaded
+     *
+     * @return Boolean true if the resource has not been updated, false otherwise
      */
-    protected function writeCache($data)
+    public function isFresh($timestamp)
     {
-        $currentUmask = umask();
-        umask(0000);
-
-        if (!is_dir(dirname($this->cacheFile))) {
-            // create directory structure if needed
-            mkdir(dirname($this->cacheFile), 0777, true);
+        if (!file_exists($this->file)) {
+            return false;
         }
 
-        $tmpFile = tempnam(dirname($this->cacheFile), basename($this->cacheFile));
-
-        if (!$fp = @fopen($tmpFile, 'wb')) {
-            throw new /Exception(sprintf('Unable to write cache file "%s".', $tmpFile));
+        if (!$this->debug) {
+            return true;
         }
 
-        fwrite($fp, $data);
-        fclose($fp);
+        return filemtime($this->file) < $timestamp;
+    }
 
-        // Hack from Agavi (http://trac.agavi.org/changeset/3979)
-        // With php < 5.2.6 on win32, renaming to an already existing file doesn't work, but copy does,
-        // so we simply assume that when rename() fails that we are on win32 and try to use copy()
-        if (!rename($tmpFile, $this->cacheFile)) {
-            if (copy($tmpFile, $this->cacheFile)) {
-                unlink($tmpFile);
+    /**
+     * Encodes data as json and wraps it in a decode function for when it's reloaded.
+     */
+    protected function prepareCacheData($cacheData)
+    {
+        $return sprintf("<?php return json_decode(%s, true);", json_encode($cacheData));
+    }
+
+    /**
+     * Writes cache file.
+     *
+     * @param string $content  The content to write in the cache
+     * @param array  $metadata An array of ResourceInterface instances
+     *
+     * @throws \RuntimeException When cache file can't be written
+     */
+    protected function write($content, array $metadata = null)
+    {
+        $dir = dirname($this->file);
+        if (!is_dir($dir)) {
+            if (false === @mkdir($dir, 0777, true)) {
+                throw new \RuntimeException(sprintf('Unable to create the %s directory', $dir));
             }
+        } elseif (!is_writable($dir)) {
+            throw new \RuntimeException(sprintf('Unable to write in the %s directory', $dir));
         }
 
-        chmod($this->cacheFile, 0666);
-        umask($currentUmask);
-
-        return true;
-      }
+        $tmpFile = tempnam(dirname($this->file), basename($this->file));
+        if (false !== @file_put_contents($tmpFile, $content) && @rename($tmpFile, $this->file)) {
+            chmod($this->file, 0666);
+        } else {
+            throw new \RuntimeException(sprintf('Failed to write cache file "%s".', $this->file));
+        }
+    }
   }

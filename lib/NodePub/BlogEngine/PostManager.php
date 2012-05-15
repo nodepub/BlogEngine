@@ -204,15 +204,11 @@ class PostManager
                 $this->postIndex = $this->createIndex();
             } else {
                 $cache = new FileCache($this->postIndexCacheFile);
-
-                $a = filemtime($this->postIndexCacheFile);
-                $b = filemtime($this->sourceDirs[0]);
-
-                if ($a > $b) {
+                if ($cache->isFresh(filemtime($this->sourceDirs[0].'/.'))) {
+                    $this->postIndex = new ArrayCollection($cache->load());
+                } else {
                     $this->postIndex = $this->createIndex();
                     $cache->dump($this->postIndex->toArray());
-                } else {
-                    $this->postIndex = new ArrayCollection($cache->load());
                 }
             }
         }
