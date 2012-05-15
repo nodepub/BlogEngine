@@ -226,11 +226,11 @@ class PostManager
             $basename = $fileinfo->getBasename('.' . $this->sourceFileExtension);
             $parser = new Parser($contents);
             $postInfo = $parser->getMetadata();
-            $filenameProperties = $this->filenameFormatter->getPostPropertiesFromFilename($fileinfo->getRealPath());
+            $filenameProperties = $this->getFilenameFormatter()->getPostPropertiesFromFilename($fileinfo->getRealPath());
             
             $postInfo = (object) array_merge($postInfo, $filenameProperties);
             $postInfo->timestamp = strtotime($postInfo->year.'-'.$postInfo->month.'-'.$postInfo->day);
-            $postInfo->permalink = $this->permalinkFormatter->getPermalink($postInfo);
+            $postInfo->permalink = $this->getPermalinkFormatter()->getPermalink($postInfo);
             $postInfo->id = $this->hashPermalink($postInfo->permalink);
             $postInfo->filepath = $fileinfo->getRealPath();
             $postInfo->filename = $fileinfo->getBasename();
@@ -404,7 +404,7 @@ class PostManager
         $this->dispatch(self::EVENT_PRE_MOVE, $post);
 
         $currentPath = $post->filepath;
-        $newPath = isset($newPath) ? $newPath : $this->filenameFormatter->getFilePath($post, dirname($currentPath));
+        $newPath = isset($newPath) ? $newPath : $this->getFilenameFormatter()->getFilePath($post, dirname($currentPath));
         
         try {
             rename($currentPath, $newPath);
@@ -434,7 +434,7 @@ class PostManager
                 }
             }
         } else {
-            $post->filepath = $this->filenameFormatter->getFilePath($post);
+            $post->filepath = $this->getFilenameFormatter()->getFilePath($post);
         }
         
         try {
@@ -446,7 +446,7 @@ class PostManager
                 return new \Exception('File could not be written');
             } else {
                 # TODO: find better way to manage adding and removing from the index
-                $post->permalink = $this->permalinkFormatter->getPermalink($post);
+                $post->permalink = $this->getPermalinkFormatter()->getPermalink($post);
                 $post->id = $this->hashPermalink($post->permalink);
                 $post->filename = basename($post->filepath);
 
@@ -464,7 +464,7 @@ class PostManager
      */
     protected function hasRenamedFileProperties(Post $post)
     {
-        return ($post->filepath != $this->filenameFormatter->getFilePath($post));
+        return ($post->filepath != $this->getFilenameFormatter()->getFilePath($post));
     }
     
     /**
