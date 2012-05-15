@@ -23,6 +23,8 @@ class PostManager
     const EVENT_PRE_DELETE = 'npblog.pre_delete_file';
     const EVENT_DELETE     = 'npblog.delete_file';
 
+    const INDEX_CACHE_FILE = 'npblogPostIndex.php';
+
     protected $sourceDirs;
     protected $postIndex;
     protected $tags;
@@ -31,6 +33,7 @@ class PostManager
     protected $permalinkFormatter;
     protected $filenameFormatter;
     protected $eventDispatcher;
+    protected $postIndexCacheFile;
   
     function __construct($sourceDirs)
     {
@@ -45,6 +48,9 @@ class PostManager
         } elseif (is_string($sourceDirs)) {
             $this->addSource($sourceDirs);
         }
+
+        # set default cache file location
+        $this->setCacheDir($this->sourceDirs[0]);
     }
     
     /**
@@ -115,6 +121,13 @@ class PostManager
         return $this->filenameFormatter;
     }
 
+    public function setCacheDir($dir)
+    {
+        if (is_dir($dir)) {
+            $this->postIndexCacheFile = $dir.'/'.self::INDEX_CACHE_FILE;
+        }
+    }
+
     public function setEventDispatcher(EventDispatcherInterface $dispatcher)
     {
         $this->eventDispatcher = $dispatcher;
@@ -179,42 +192,50 @@ class PostManager
     
     /**
      * Creates an index of post metadata objects
-     * @todo cache the index as a php object with a timestamp,
-     *       compare the timestamp to the modified date of the source dir (filemtime)
-     *       to determine if reindexing is necessary
      */
     public function getPostIndex()
     {
         if (is_null($this->postIndex)) {
 
-            # @todo load cached index file
-            # compare timestamps
+            $cache = new FileCache($this->postIndexCacheFile);
 
+            $a = filemtime($this->postIndexCacheFile);
+            $b = filemtime($this->sourceDirs[0]);
 
-            $posts = array();
-            $files = $this->findFiles();
-
-            foreach ($files as $fileinfo) {
-                $contents = $this->readFile($fileinfo);
-                $basename = $fileinfo->getBasename('.' . $this->sourceFileExtension);
-                $parser = new Parser($contents);
-                $postInfo = $parser->getMetadata();
-                $filenameProperties = $this->filenameFormatter->getPostPropertiesFromFilename($fileinfo->getRealPath());
-                
-                $postInfo = (object) array_merge($postInfo, $filenameProperties);
-                $postInfo->timestamp = strtotime($postInfo->year.'-'.$postInfo->month.'-'.$postInfo->day);
-                $postInfo->permalink = $this->permalinkFormatter->getPermalink($postInfo);
-                $postInfo->id = $this->hashPermalink($postInfo->permalink);
-                $postInfo->filepath = $fileinfo->getRealPath();
-                $postInfo->filename = $fileinfo->getBasename();
-
-                $posts[$postInfo->id] = $postInfo;
+            if ($a > $b) {
+                $this->postIndex = $this->createIndex();
+                $cache->dump($this->postIndex->toArray());
+            } else {
+                $this->postIndex = new ArrayCollection($cache->load());
             }
-
-            $this->postIndex = new ArrayCollection($posts);
         }
         
         return $this->postIndex;
+    }
+
+    protected function createIndex()
+    {
+        $posts = array();
+        $files = $this->findFiles();
+
+        foreach ($files as $fileinfo) {
+            $contents = $this->readFile($fileinfo);
+            $basename = $fileinfo->getBasename('.' . $this->sourceFileExtension);
+            $parser = new Parser($contents);
+            $postInfo = $parser->getMetadata();
+            $filenameProperties = $this->filenameFormatter->getPostPropertiesFromFilename($fileinfo->getRealPath());
+            
+            $postInfo = (object) array_merge($postInfo, $filenameProperties);
+            $postInfo->timestamp = strtotime($postInfo->year.'-'.$postInfo->month.'-'.$postInfo->day);
+            $postInfo->permalink = $this->permalinkFormatter->getPermalink($postInfo);
+            $postInfo->id = $this->hashPermalink($postInfo->permalink);
+            $postInfo->filepath = $fileinfo->getRealPath();
+            $postInfo->filename = $fileinfo->getBasename();
+
+            $posts[$postInfo->id] = $postInfo;
+        }
+
+        return new ArrayCollection($posts);
     }
 
     /**
