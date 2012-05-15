@@ -69,7 +69,7 @@ class FileCache
      */
     protected function prepareCacheData($cacheData)
     {
-        $return sprintf("<?php return json_decode(%s, true);", json_encode($cacheData));
+        return sprintf('<?php return json_decode(%s, true);', json_encode($cacheData));
     }
 
     /**
