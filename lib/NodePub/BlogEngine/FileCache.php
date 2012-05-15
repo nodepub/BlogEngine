@@ -41,7 +41,7 @@ class FileCache
      */
     public function dump(array $cacheData)
     {
-        $this->write($this->prepareCacheData($cache));
+        $this->write($this->prepareCacheData($cacheData));
     }
 
     /**
