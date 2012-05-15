@@ -50,7 +50,7 @@ class PostManager
         }
 
         # set default cache file location
-        $this->setCacheDir($this->sourceDirs[0]);
+        $this->setCacheDirectory($this->sourceDirs[0]);
     }
     
     /**
@@ -121,10 +121,12 @@ class PostManager
         return $this->filenameFormatter;
     }
 
-    public function setCacheDir($dir)
+    public function setCacheDirectory($dir)
     {
-        if (is_dir($dir)) {
+        if (false !== $dir) {
             $this->postIndexCacheFile = $dir.'/'.self::INDEX_CACHE_FILE;
+        } else {
+            $this->postIndexCacheFile = false;
         }
     }
 
@@ -197,16 +199,21 @@ class PostManager
     {
         if (is_null($this->postIndex)) {
 
-            $cache = new FileCache($this->postIndexCacheFile);
-
-            $a = filemtime($this->postIndexCacheFile);
-            $b = filemtime($this->sourceDirs[0]);
-
-            if ($a > $b) {
+            if (false === $this->postIndexCacheFile) {
+                // bypass caching
                 $this->postIndex = $this->createIndex();
-                $cache->dump($this->postIndex->toArray());
             } else {
-                $this->postIndex = new ArrayCollection($cache->load());
+                $cache = new FileCache($this->postIndexCacheFile);
+
+                $a = filemtime($this->postIndexCacheFile);
+                $b = filemtime($this->sourceDirs[0]);
+
+                if ($a > $b) {
+                    $this->postIndex = $this->createIndex();
+                    $cache->dump($this->postIndex->toArray());
+                } else {
+                    $this->postIndex = new ArrayCollection($cache->load());
+                }
             }
         }
         
