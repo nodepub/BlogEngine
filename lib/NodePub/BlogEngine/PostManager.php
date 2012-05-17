@@ -234,6 +234,7 @@ class PostManager
             $postInfo->id = $this->hashPermalink($postInfo->permalink);
             $postInfo->filepath = $fileinfo->getRealPath();
             $postInfo->filename = $fileinfo->getBasename();
+            $postInfo->title = addslashes($postInfo->title);
 
             $posts[$postInfo->id] = $postInfo;
         }
@@ -276,7 +277,7 @@ class PostManager
     public function findById($id)
     {
         $index = $this->getPostIndex();
-        $postMeta = $index->get($id);
+        $postMeta = (object) $index->get($id);
         
         if ($postMeta) {
             $fileinfo = new \SplFileInfo($postMeta->filepath);
