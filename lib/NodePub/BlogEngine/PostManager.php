@@ -195,7 +195,7 @@ class PostManager
     /**
      * Creates an index of post metadata objects
      */
-    public function getPostIndex()
+    public function getPostIndex($forceRefresh = false)
     {
         if (is_null($this->postIndex)) {
 
@@ -204,7 +204,7 @@ class PostManager
                 $this->postIndex = $this->createIndex();
             } else {
                 $cache = new FileCache($this->postIndexCacheFile);
-                if ($cache->isFresh(filemtime($this->sourceDirs[0].'/.'))) {
+                if (!$forceRefresh && $cache->isFresh(filemtime($this->sourceDirs[0].'/.'))) {
                     $this->postIndex = new ArrayCollection($cache->load());
                 } else {
                     $this->postIndex = $this->createIndex();
@@ -214,6 +214,15 @@ class PostManager
         }
         
         return $this->postIndex;
+    }
+    
+    /**
+     * Re-creates the post index and cache
+     */
+    public function refreshPostIndex()
+    {
+        unset($this->postIndex);
+        return $this->getPostIndex(false);
     }
 
     protected function createIndex()
