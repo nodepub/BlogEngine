@@ -59,6 +59,10 @@ class PostManager
      */
     public function addSource($sourcePath)
     {
+        if (is_link($sourcePath)) {
+            $this->addSource(readlink($sourcePath));
+        }
+        
         if (is_dir($sourcePath)) {
             $this->sourceDirs[] = $sourcePath;
         } else {
