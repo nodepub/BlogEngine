@@ -30,7 +30,7 @@ class FileCache
         $cacheData = null;
 
         if (is_file($this->file)) {
-            $cacheData = unserialize(file_get_contents($this->file));
+            $cacheData = json_decode(file_get_contents($this->file), true);
         }
 
         return $cacheData;
@@ -41,7 +41,7 @@ class FileCache
      */
     public function dump(array $cacheData)
     {
-        $this->write(serialize($cacheData));
+        $this->write(json_encode($cacheData));
     }
 
     /**
