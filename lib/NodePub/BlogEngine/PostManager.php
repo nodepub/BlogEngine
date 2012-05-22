@@ -11,7 +11,6 @@ use NodePub\BlogEngine\FilenameFormatter;
 use NodePub\BlogEngine\PermalinkFormatter;
 use NodePub\BlogEngine\PostEvent;
 
-
 class PostManager
 {
     const EVENT_PRE_CREATE = 'npblog.pre_create_file';
@@ -55,7 +54,7 @@ class PostManager
     
     /**
      * Adds a directory to the array of sources that will
-     * be searched for post files
+     * be searched for post files.
      */
     public function addSource($sourcePath)
     {
@@ -71,7 +70,7 @@ class PostManager
     }
 
     /**
-     * Set the filter passed to Posts for filtering content
+     * Sets the filter passed to Posts for filtering content.
      * @see NodePub\BlogEngine\FilterMarkdown
      */
     public function setContentFilter($filter)
@@ -80,7 +79,7 @@ class PostManager
     }
     
     /**
-     * Set the extension used for searching for post files
+     * Sets the extension used for searching for post files.
      */
     public function setSourceFileExtension($ext)
     {
@@ -88,8 +87,7 @@ class PostManager
     }
 
     /**
-     * Set the object that defines and builds permalink strings
-     * from Posts
+     * Sets the object that defines and builds permalink strings from Posts.
      */
     public function setPermalinkFormatter($formatter)
     {
@@ -97,7 +95,7 @@ class PostManager
     }
 
     /**
-     * Gets the permalink formatter or instantiates a new one
+     * Gets the permalink formatter or instantiates a new one.
      */
     public function getPermalinkFormatter()
     {
@@ -108,11 +106,17 @@ class PostManager
         return $this->permalinkFormatter;
     }
 
+    /**
+     * Sets the object used for formatting Post filenames.
+     */
     public function setFilenameFormatter($formatter)
     {
         $this->filenameFormatter = $formatter;
     }
 
+    /**
+     * Gets the filename formatter or instantiates a new one.
+     */
     public function getFilenameFormatter()
     {
         if (is_null($this->filenameFormatter)) {
@@ -125,6 +129,11 @@ class PostManager
         return $this->filenameFormatter;
     }
 
+    /**
+     * Sets the cache directory used to create the cache file path.
+     * If false it turns caching off.
+     * @param mixed 
+     */
     public function setCacheDirectory($dir)
     {
         if (false !== $dir) {
@@ -140,7 +149,7 @@ class PostManager
     }
 
     /**
-     * Dispatches a PostEvent if an eventDispatcher is set
+     * Dispatches a PostEvent if an eventDispatcher is set.
      */
     protected function dispatch($eventName, Post $post)
     {
@@ -151,8 +160,10 @@ class PostManager
     }
     
     /**
-     * Finds all text files in the configured posts dir(s).
-     * Returns array of SplFileInfo objects.
+     * Finds all files in the configured posts dir(s)
+     * with the configured file extension.
+     *
+     * @return array SplFileInfo objects
      */
     protected function findFiles()
     {
@@ -168,12 +179,13 @@ class PostManager
         
         # orders posts by date
         $files->sortByName();
-        
-        return $files;
+
+        # reverse order so that newest are first
+        return array_reverse(iterator_to_array($files));
     }
     
     /**
-     * Returns the contents of a file
+     * Returns the contents of a file.
      */
     protected function readFile(\SplFileInfo $fileinfo)
     {
@@ -188,8 +200,7 @@ class PostManager
     }
     
     /**
-     * Get the first 8 chars of the hashed permalink
-     * to use as an id
+     * Get the first 8 chars of the hashed permalink to use as an id.
      */
     public function hashPermalink($permalink)
     {
@@ -197,7 +208,12 @@ class PostManager
     }
     
     /**
-     * Creates an index of post metadata objects
+     * Returns the index of post metadata objects.
+     * Creates a new index unless it already exists or if
+     * $forceRefresh is true.
+     *
+     * @param boolean $forceRefresh
+     * @return ArrayCollection
      */
     public function getPostIndex($forceRefresh = false)
     {
@@ -222,6 +238,7 @@ class PostManager
     
     /**
      * Re-creates the post index and cache
+     * @return ArrayCollection
      */
     public function refreshPostIndex()
     {
@@ -229,6 +246,11 @@ class PostManager
         return $this->getPostIndex(false);
     }
 
+    /**
+     * Traverses post files to create the index of post meta data
+     *
+     * @return ArrayCollection  Unexpanded post meta objects
+     */
     protected function createIndex()
     {
         $posts = array();
@@ -247,7 +269,7 @@ class PostManager
             $postInfo->id = $this->hashPermalink($postInfo->permalink);
             $postInfo->filepath = $fileinfo->getRealPath();
             $postInfo->filename = $fileinfo->getBasename();
-            $postInfo->title = addslashes($postInfo->title);
+            $postInfo->title = $postInfo->title;
 
             $posts[$postInfo->id] = $postInfo;
         }
@@ -256,16 +278,45 @@ class PostManager
     }
 
     /**
+     * Calculates the number of pages given the number of posts per page.
+     */
+    public function getPageCount($postsPerPage)
+    {
+        $postCount = $this->getPostIndex()->count();
+        $pageCount = 1;
+
+        if ($postCount == 0 || $postsPerPage == 0) {
+            $pageCount = 0;
+        }
+
+        if ($postCount > $postsPerPage) {
+            // subtract the remainder to get an inter value
+            $pageCount = ($postCount - ($postCount % $postsPerPage)) / $postsPerPage;
+            // add a page if there is a remainder
+            if ($postCount % $postsPerPage !== 0) {
+                $pageCount++;
+            }
+        }
+
+        return $pageCount;
+    }
+
+    /**
      * Gets the last N posts from the index and
      * optionally expands each to a full post object
+     *
+     * @return array
      */
     public function findRecentPosts($length, $page = 1, $expand = true)
     {
         $posts = $this->getPostIndex();
-        $offset = $length * $page;
+        $offset = 0;
 
-        // posts are in chronological order, so slice from the end of the array
-        $recentPosts = new ArrayCollection($posts->slice(-$offset, $length));
+        if ($page > 1) {
+            $offset += $length * ($page - 1);
+        }
+
+        $recentPosts = new ArrayCollection($posts->slice($offset, $length));
 
         if ($expand) {
             $recentPosts = $this->expandPosts($recentPosts);
@@ -275,14 +326,14 @@ class PostManager
             $recentPosts = $recentPosts->toArray();
         }
 
-        return array_reverse($recentPosts);
+        return $recentPosts;
     }
     
     /**
      * Searches the index for a matching post.
      * If found, it creates a new Post object with filtered content
      * 
-     * @return Post
+     * @return mixed  found Post or null
      */
     public function findById($id)
     {
@@ -310,6 +361,8 @@ class PostManager
     
     /**
      * Searches for a post by permalink
+     *
+     * @return mixed  found Post or null
      */
     public function findByPermalink($permalink)
     {
@@ -318,6 +371,8 @@ class PostManager
 
     /**
      * Given a post id, get the previous and next posts
+     *
+     * @return array
      */
     public function findPrevAndNextPosts($id)
     {
@@ -345,6 +400,8 @@ class PostManager
     /**
      * Takes an ArrayCollection of post metas and expands each into a 
      * full Post object with parsed content
+     * @todo return ArrayCollection?
+     * @return array
      */
     public function expandPosts(ArrayCollection $postCollection)
     {
@@ -378,7 +435,7 @@ class PostManager
             });
         }
         
-        return array_reverse($this->expandPosts($filteredPosts));
+        return $this->expandPosts($filteredPosts);
     }
     
     /**
@@ -395,7 +452,7 @@ class PostManager
 
             foreach ($this->getPostIndex() as $postMeta) {
                 if (!array_key_exists('tags', $postMeta)) continue;
-                $taggings = $postMeta->tags;
+                $taggings = $postMeta['tags'];
                 foreach ($taggings as $tag) {
                     if (array_key_exists($tag, $this->tags)) {
                         $this->tags[$tag]++;
@@ -410,6 +467,9 @@ class PostManager
         return $this->tags;
     }
     
+    /**
+     * Renames a Post file
+     */
     public function renamePostFile(Post $post, $newPath = null)
     {
         $this->dispatch(self::EVENT_PRE_MOVE, $post);
