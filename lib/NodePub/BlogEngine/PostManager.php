@@ -259,17 +259,14 @@ class PostManager
      * Gets the last N posts from the index and
      * optionally expands each to a full post object
      */
-    public function findRecentPosts($limit, $page = 1, $expand = true)
+    public function findRecentPosts($length, $page = 1, $expand = true)
     {
         $posts = $this->getPostIndex();
-        $offset = $limit * $page;
+        $offset = $length * $page;
 
-        if ($offset > $posts->count()) {
-            $recentPosts = $posts;
-        } else {
-            $recentPosts = $posts->slice(-$offset, $limit);
-        }
-        
+        // posts are in chronological order, so slice from the end of the array
+        $recentPosts = new ArrayCollection($posts->slice(-$offset, $length));
+
         if ($expand) {
             $recentPosts = $this->expandPosts($recentPosts);
         }

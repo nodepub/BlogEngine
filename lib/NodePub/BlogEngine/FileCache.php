@@ -30,7 +30,7 @@ class FileCache
         $cacheData = null;
 
         if (is_file($this->file)) {
-            $cacheData = require_once($this->file);
+            $cacheData = unserialize(file_get_contents($this->file));
         }
 
         return $cacheData;
@@ -41,7 +41,7 @@ class FileCache
      */
     public function dump(array $cacheData)
     {
-        $this->write($this->prepareCacheData($cacheData));
+        $this->write(serialize($cacheData));
     }
 
     /**
@@ -62,14 +62,6 @@ class FileCache
         }
 
         return filemtime($this->file) < $timestamp;
-    }
-
-    /**
-     * Encodes data as json and wraps it in a decode function for when it's reloaded.
-     */
-    protected function prepareCacheData($cacheData)
-    {
-        return sprintf("<?php return json_decode('%s', true);", json_encode($cacheData));
     }
 
     /**
