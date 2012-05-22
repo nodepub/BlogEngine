@@ -395,7 +395,7 @@ class PostManager
 
             foreach ($this->getPostIndex() as $postMeta) {
                 if (!array_key_exists('tags', $postMeta)) continue;
-                $taggings = $postMeta['tags'];
+                $taggings = $postMeta->tags;
                 foreach ($taggings as $tag) {
                     if (array_key_exists($tag, $this->tags)) {
                         $this->tags[$tag]++;
