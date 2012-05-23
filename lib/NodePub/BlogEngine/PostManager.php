@@ -335,12 +335,18 @@ class PostManager
      * 
      * @return mixed  found Post or null
      */
-    public function findById($id)
+    public function findById($id, $expand = true)
     {
         $index = $this->getPostIndex();
         $postMeta = (object) $index->get($id);
         
         if ($postMeta) {
+
+            if ($expand === false) {
+                # return unexpanded post
+                return $postMeta;
+            }
+
             $fileinfo = new \SplFileInfo($postMeta->filepath);
             $parser = new Parser($this->readFile($fileinfo));
             
@@ -364,9 +370,9 @@ class PostManager
      *
      * @return mixed  found Post or null
      */
-    public function findByPermalink($permalink)
+    public function findByPermalink($permalink, $expand = true)
     {
-        return $this->findById($this->hashPermalink($permalink));
+        return $this->findById($this->hashPermalink($permalink), $expand);
     }
 
     /**
@@ -465,6 +471,13 @@ class PostManager
         }
         
         return $this->tags;
+    }
+
+    public function getModifiedDate($post)
+    {
+        if (isset($post->filepath) && is_file($post->filepath)) {
+            return filemtime($post->filepath);
+        }
     }
     
     /**
