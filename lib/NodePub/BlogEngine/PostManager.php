@@ -22,7 +22,7 @@ class PostManager
     const EVENT_PRE_DELETE = 'npblog.pre_delete_file';
     const EVENT_DELETE     = 'npblog.delete_file';
 
-    const INDEX_CACHE_FILE = 'npblogPostIndex.php';
+    const INDEX_CACHE_FILE = 'npblogPostIndex.json';
 
     protected $sourceDirs;
     protected $postIndex;
