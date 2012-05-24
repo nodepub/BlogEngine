@@ -473,10 +473,18 @@ class PostManager
         return $this->tags;
     }
 
+    /**
+     * Returns the modified date of a post file
+     * @return DateTime
+     */
     public function getModifiedDate($post)
     {
         if (isset($post->filepath) && is_file($post->filepath)) {
-            return filemtime($post->filepath);
+            
+            $date = new \DateTime();
+            $date->setTimestamp(filemtime($post->filepath));
+            
+            return $date;
         }
     }
     
