@@ -383,9 +383,9 @@ class PostManager
     public function findBySlug($slug, $expand = true)
     {
         $filteredPosts = $this->getPostIndex()->filter(function($postInfo) use($slug) {
-            if (!array_key_exists('slug', $postInfo)) return false;
+            if (!isset($postInfo->slug)) return false;
 
-            return $slug == $postInfo['slug'];
+            return $slug == $postInfo->slug;
         });
         
         return $this->findById($filteredPosts->first()->id, $expand);
