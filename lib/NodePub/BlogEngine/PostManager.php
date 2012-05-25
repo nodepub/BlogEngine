@@ -374,6 +374,22 @@ class PostManager
     {
         return $this->findById($this->hashPermalink($permalink), $expand);
     }
+    
+    /**
+     * Searches for a post by slug name
+     *
+     * @return mixed  found Post or null
+     */
+    public function findBySlug($slug, $expand = true)
+    {
+        $filteredPosts = $this->getPostIndex()->filter(function($postInfo) use($slug) {
+            if (!array_key_exists('slug', $postInfo)) return false;
+
+            return $slug == $postInfo['slug'];
+        });
+        
+        return $this->findById($filteredPosts->first()->id, $expand);
+    }
 
     /**
      * Given a post id, get the previous and next posts
