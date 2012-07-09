@@ -269,7 +269,6 @@ class PostManager
             $postInfo->id = $this->hashPermalink($postInfo->permalink);
             $postInfo->filepath = $fileinfo->getRealPath();
             $postInfo->filename = $fileinfo->getBasename();
-            $postInfo->title = $postInfo->title;
 
             $posts[$postInfo->id] = $postInfo;
         }
@@ -447,10 +446,10 @@ class PostManager
 
         foreach ($query as $key => $value) {
             $filteredPosts = $filteredPosts->filter(function($postMeta) use($key, $value) {
-                if (!array_key_exists($key, $postMeta)) return false;
+                if (!isset($postMeta->$key)) return false;
 
-                if (is_array($postMeta[$key])) {
-                    return (in_array($value, $postMeta[$key]));
+                if (is_array($postMeta->$key)) {
+                    return (in_array($value, $postMeta->$key));
                 }
 
                 return $value == $postMeta[$key];
@@ -473,8 +472,8 @@ class PostManager
             $this->tags = array();
 
             foreach ($this->getPostIndex() as $postMeta) {
-                if (!array_key_exists('tags', $postMeta)) continue;
-                $taggings = $postMeta['tags'];
+                if (!isset($postMeta->tags)) continue;
+                $taggings = $postMeta->tags;
                 foreach ($taggings as $tag) {
                     if (array_key_exists($tag, $this->tags)) {
                         $this->tags[$tag]++;
@@ -495,13 +494,12 @@ class PostManager
      */
     public function getModifiedDate($post)
     {
+        $date = new \DateTime();
         if (isset($post->filepath) && is_file($post->filepath)) {
-            
-            $date = new \DateTime();
             $date->setTimestamp(filemtime($post->filepath));
-            
-            return $date;
         }
+
+        return $date;
     }
     
     /**
