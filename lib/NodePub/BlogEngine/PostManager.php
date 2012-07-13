@@ -59,13 +59,14 @@ class PostManager
     public function addSource($sourcePath)
     {
         if (is_link($sourcePath)) {
-            $this->addSource(readlink($sourcePath));
+            $this->addSource(realpath($sourcePath));
+            return;
         }
         
         if (is_dir($sourcePath)) {
             $this->sourceDirs[] = $sourcePath;
         } else {
-            throw new \Exception(sprintf('Source path "%s" is not a directory', $sourcePath));
+            throw new \Exception(sprintf('Source path "%s" is not a readable directory', $sourcePath));
         }
     }
 
