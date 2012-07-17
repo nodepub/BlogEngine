@@ -27,6 +27,7 @@ class PostManager
     protected $sourceDirs;
     protected $postIndex;
     protected $tags;
+    protected $taggings;
     protected $contentFilter;
     protected $sourceFileExtension;
     protected $permalinkFormatter;
@@ -447,46 +448,67 @@ class PostManager
 
         foreach ($query as $key => $value) {
             $filteredPosts = $filteredPosts->filter(function($postMeta) use($key, $value) {
-                if (!isset($postMeta->$key)) return false;
-
-                if (is_array($postMeta->$key)) {
-                    return (in_array($value, $postMeta->$key));
+                $match = false;
+                if (isset($postMeta->$key)) {
+                    if (is_array($postMeta->$key)) {
+                        $match = (in_array($value, $postMeta->$key));
+                    } else {
+                        $match = ($value == $postMeta->$key);
+                    }
                 }
 
-                return $value == $postMeta[$key];
+                return $match;
             });
         }
-        
+
         return $this->expandPosts($filteredPosts);
     }
     
+    /**
+     * Returns all existing tags as an associative array
+     * with the tag slug as the key and the tagging array as the value
+     * e.g. array('foo' => array('Foo' => 7))
+     * 
+     * @return array
+     */
+    public function getTags()
+    {
+        if (is_null($this->tags)) {
+            $this->tags = array();
+            $taggings = $this->getTaggings();
+            foreach ($taggings as $tagName => $tagCount) {
+                $tagSlug = str_replace(' ', '-', strtolower($tagName));
+                $this->tags[$tagSlug] = array($tagName => $tagCount);
+            }
+        }
+        
+        return $this->tags;
+    }
+
     /**
      * Returns all existing tags as an associative array
      * with the tag name as the key and the number of taggings as the value
      * 
      * @return array
      */
-    public function getTags()
+    public function getTaggings()
     {
-        if (is_null($this->tags))
-        {
-            $this->tags = array();
+        if (is_null($this->taggings)) {
+            $this->taggings = array();
 
             foreach ($this->getPostIndex() as $postMeta) {
                 if (!isset($postMeta->tags)) continue;
-                $taggings = $postMeta->tags;
-                foreach ($taggings as $tag) {
-                    if (array_key_exists($tag, $this->tags)) {
-                        $this->tags[$tag]++;
-                    }
-                    else {
-                        $this->tags[$tag] = 1;
+                foreach ($postMeta->tags as $tag) {
+                    if (array_key_exists($tag, $this->taggings)) {
+                        $this->taggings[$tag]++;
+                    } else {
+                        $this->taggings[$tag] = 1;
                     }
                 }
             }
         }
         
-        return $this->tags;
+        return $this->taggings;
     }
 
     /**
