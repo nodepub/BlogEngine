@@ -244,7 +244,7 @@ class PostManager
     public function refreshPostIndex()
     {
         unset($this->postIndex);
-        return $this->getPostIndex(false);
+        return $this->getPostIndex(true);
     }
 
     /**
