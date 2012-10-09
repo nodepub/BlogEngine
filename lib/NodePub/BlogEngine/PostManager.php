@@ -478,7 +478,7 @@ class PostManager
             $taggings = $this->getTaggings();
             foreach ($taggings as $tagName => $tagCount) {
                 $tagSlug = str_replace(' ', '-', strtolower($tagName));
-                $this->tags[$tagSlug] = array($tagName => $tagCount);
+                $this->tags[] = array('name' => $tagName, 'slug' => $tagSlug, 'count' => $tagCount);
             }
         }
         
