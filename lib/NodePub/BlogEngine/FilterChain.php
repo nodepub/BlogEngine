@@ -11,7 +11,7 @@ class FilterChain
     
     function __construct($filters = array())
     {
-        $this->filters = $filter;
+        $this->filters = $filters;
     }
     
     public function addFilter($filter)
