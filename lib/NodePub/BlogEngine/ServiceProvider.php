@@ -6,6 +6,7 @@ use Silex\Application;
 use Silex\ServiceProviderInterface;
 use NodePub\BlogEngine\PostManager;
 use NodePub\BlogEngine\Controller;
+use NodePub\BlogEngine\Twig\TwigExtension;
 use NodePub\BlogEngine\Config as Blog;
 
 /**
@@ -15,36 +16,39 @@ use NodePub\BlogEngine\Config as Blog;
  * By setting separate config values on the $app container,
  * any of them can be overridden.
  */
-class BlogServiceProvider implements ServiceProviderInterface
+class ServiceProvider implements ServiceProviderInterface
 {
     public function register(Application $app)
     {
+        $app[Blog::FRONTPAGE_POST_LIMIT] = 10;
+        $app[Blog::FRONTPAGE_TEMPLATE]   = '@default/blog_index.twig';
+        $app[Blog::PERMALINK_TEMPLATE]   = '@default/blog_post.twig';
+        $app[Blog::DEFAULT_TEMPLATE]     = '@default/blog_post.twig';
+        $app[Blog::TAG_PAGE_TEMPLATE]    = '@default/blog_index.twig';
+        $app[Blog::CATEGORY_TEMPLATE]    = '@default/blog_index.twig';
+        $app[Blog::RSS_POST_LIMIT]       = 20;
+        $app[Blog::RSS_TEMPLATE]         = '@default/rss.twig';
+        $app[Blog::RECENT_POSTS_LIMIT]   = 5;
+
+        $app[Blog::CONTENT_FILTER] = $app->share(function($app) {
+            $markdown = new \dflydev\markdown\MarkdownParser();
+            return new \NodePub\BlogEngine\FilterMarkdown($markdown);
+        });
+
         # Alias twig by wrapping it in a closure
         $app[Blog::TEMPLATE_ENGINE] = function($app) {
             return $app['twig'];
         };
-
-        $app[Blog::CONTENT_FILTER] = function($app) {
-            $filter = new \NodePub\BlogEngine\FilterMarkdown($app['markdown']);
-            return $filter;
-        };
-
-        $app[Blog::FRONTPAGE_POST_LIMIT] = 10;
-        $app[Blog::FRONTPAGE_TEMPLATE]   = '@default/blog.twig';
-        $app[Blog::PERMALINK_TEMPLATE]   = '@default/blog_post.twig';
-        $app[Blog::DEFAULT_TEMPLATE]     = '@default/blog_post.twig';
-        $app[Blog::TAG_PAGE_TEMPLATE]    = '@default/blog.twig';
-        $app[Blog::CATEGORY_TEMPLATE]    = '@default/blog.twig';
-        $app[Blog::RSS_POST_LIMIT]       = 20;
-        $app[Blog::RSS_TEMPLATE]         = 'rss.twig';
-        $app[Blog::RECENT_POSTS_LIMIT]   = 5;
-        $app[Blog::POSTS_DIR]            = $app['site_dir'].'/posts';
+        
+        if (isset($app['twig'])) {
+            $app['twig']->addExtension(new TwigExtension($app['url_generator']));
+        }
 
         $app['blog.mount_point'] = '/blog';
 
         $app['blog.post_manager'] = $app->share(function($app) {
-            $manager = new PostManager($app['blog.posts_dir']);
-            $manager->setContentFilter($app['blog.content_filter']);
+            $manager = new PostManager($app[Blog::POSTS_DIR]);
+            $manager->setContentFilter($app[Blog::CONTENT_FILTER]);
             $manager->setSourceFileExtension('txt');
             //$manager->setCacheDirectory($app['cache_dir']);
             $manager->setCacheDirectory(false);
@@ -52,26 +56,24 @@ class BlogServiceProvider implements ServiceProviderInterface
             return $manager;
         });
 
-        $app['blog.config'] = $app->share(function($app) {
-            return array(
-                Blog::TEMPLATE_ENGINE      => $app[Blog::TEMPLATE_ENGINE],
-                Blog::CONTENT_FILTER       => $app[Blog::CONTENT_FILTER],
-                Blog::FRONTPAGE_POST_LIMIT => $app[Blog::FRONTPAGE_POST_LIMIT],
-                Blog::FRONTPAGE_TEMPLATE   => $app[Blog::FRONTPAGE_TEMPLATE],
-                Blog::PERMALINK_TEMPLATE   => $app[Blog::PERMALINK_TEMPLATE],
-                Blog::DEFAULT_TEMPLATE     => $app[Blog::DEFAULT_TEMPLATE],
-                Blog::TAG_PAGE_TEMPLATE    => $app[Blog::TAG_PAGE_TEMPLATE],
-                Blog::CATEGORY_TEMPLATE    => $app[Blog::CATEGORY_TEMPLATE],
-                Blog::RSS_POST_LIMIT       => $app[Blog::RSS_POST_LIMIT],
-                Blog::RSS_TEMPLATE         => $app[Blog::RSS_TEMPLATE],
-                Blog::RECENT_POSTS_LIMIT   => $app[Blog::RECENT_POSTS_LIMIT],
-                Blog::POSTS_DIR            => $app[Blog::POSTS_DIR]
+        $app['blog.controller'] = $app->share(function($app) {
+            $config = array_replace(
+                Blog::getDefaults(),
+                array(
+                    Blog::FRONTPAGE_POST_LIMIT => $app[Blog::FRONTPAGE_POST_LIMIT],
+                    Blog::FRONTPAGE_TEMPLATE   => $app[Blog::FRONTPAGE_TEMPLATE],
+                    Blog::PERMALINK_TEMPLATE   => $app[Blog::PERMALINK_TEMPLATE],
+                    Blog::DEFAULT_TEMPLATE     => $app[Blog::DEFAULT_TEMPLATE],
+                    Blog::TAG_PAGE_TEMPLATE    => $app[Blog::TAG_PAGE_TEMPLATE],
+                    Blog::CATEGORY_TEMPLATE    => $app[Blog::CATEGORY_TEMPLATE],
+                    Blog::RSS_POST_LIMIT       => $app[Blog::RSS_POST_LIMIT],
+                    Blog::RSS_TEMPLATE         => $app[Blog::RSS_TEMPLATE],
+                    Blog::RECENT_POSTS_LIMIT   => $app[Blog::RECENT_POSTS_LIMIT],
+                    Blog::POSTS_DIR            => $app[Blog::POSTS_DIR]
+                )
             );
-        });
 
-        $app['blog.controller'] = $app->share(function() use ($app) {
-            $config = array_merge(Blog::getDefaults(), $app['blog.config']);
-            return new Controller($app['blog.post_manager'], $config);
+            return new Controller($app['blog.post_manager'], $app[Blog::TEMPLATE_ENGINE], $config);
         });
     }
 

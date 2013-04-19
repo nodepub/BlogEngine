@@ -7,7 +7,7 @@ use NodePub\BlogEngine\Config;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class BlogController
+class Controller
 {
     protected $postManager;
 
@@ -28,7 +28,7 @@ class BlogController
     public function postsAction()
     {
         return new Response(
-            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE]), array(
+            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
                 'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT]),
                 'pageNumber' => 1,
                 'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
@@ -47,7 +47,7 @@ class BlogController
         );
     }
 
-    public function postAction($year, $month, $slug)
+    public function postAction(Request $request, $year, $month, $slug)
     {
         $permalink = sprintf("%s/%s/%s", $year, $month, $slug);
         $postInfo = $this->postManager->findByPermalink($permalink, false);
