@@ -4,7 +4,7 @@ namespace NodePub\BlogEngine\Twig;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-class TwigExtension extends \Twig_Extension
+class BlogTwigExtension extends \Twig_Extension
 {
     private $urlGenerator;
 

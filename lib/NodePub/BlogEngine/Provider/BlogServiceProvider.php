@@ -1,12 +1,12 @@
 <?php
 
-namespace NodePub\BlogEngine;
+namespace NodePub\BlogEngine\Provider;
 
 use Silex\Application;
 use Silex\ServiceProviderInterface;
 use NodePub\BlogEngine\PostManager;
 use NodePub\BlogEngine\Controller;
-use NodePub\BlogEngine\Twig\TwigExtension;
+use NodePub\BlogEngine\Twig\BlogTwigExtension;
 use NodePub\BlogEngine\Config as Blog;
 
 /**
@@ -16,7 +16,7 @@ use NodePub\BlogEngine\Config as Blog;
  * By setting separate config values on the $app container,
  * any of them can be overridden.
  */
-class ServiceProvider implements ServiceProviderInterface
+class BlogServiceProvider implements ServiceProviderInterface
 {
     public function register(Application $app)
     {
@@ -41,10 +41,11 @@ class ServiceProvider implements ServiceProviderInterface
         };
         
         if (isset($app['twig'])) {
-            $app['twig']->addExtension(new TwigExtension($app['url_generator']));
+            $app['twig']->addExtension(new BlogTwigExtension($app['url_generator']));
         }
 
         $app['blog.mount_point'] = '/blog';
+        $app['blog.permalink_format'] = '/{year}/{month}/{slug}';
 
         $app['blog.post_manager'] = $app->share(function($app) {
             $manager = new PostManager($app[Blog::POSTS_DIR]);
@@ -54,6 +55,13 @@ class ServiceProvider implements ServiceProviderInterface
             $manager->setCacheDirectory(false);
 
             return $manager;
+        });
+
+        // Create an intermediate for generating urls directly from a post
+        $app['blog.permalink_generator'] = $app->share(function($app) {
+            $postRoute = $app['routes']->get('blog_get_post');
+            $paramKeys = $postRoute->getParams();
+            $app['url_generator']->generate('blog_get_post', $params);
         });
 
         $app['blog.controller'] = $app->share(function($app) {
@@ -82,13 +90,14 @@ class ServiceProvider implements ServiceProviderInterface
         $blog = $app['controllers_factory'];
 
         $blog->get('/', 'blog.controller:postsAction')
-            ->bind('blog_get_posts');
+            ->bind('blog_get_posts')
+            ->value('page', 1);
 
-        $blog->get('/page/{page}', 'blog.controller:pagedPostsAction')
+        $blog->get('/page/{page}', 'blog.controller:postsAction')
             ->assert('page', "\d")
             ->bind('blog_get_paged_posts');
 
-        $blog->get('/{year}/{month}/{slug}', 'blog.controller:postAction')
+        $blog->get($app['blog.permalink_format'], 'blog.controller:postAction')
             ->assert('year', "\d\d\d\d")
             ->assert('month', "\d\d")
             ->bind('blog_get_post');
@@ -105,8 +114,9 @@ class ServiceProvider implements ServiceProviderInterface
         $blog->get('/tags/{tag}', 'blog.controller:taggedPostsAction')
             ->bind('blog_get_tag_index');
 
-        $blog->get('/archive', 'blog.controller:getArchiveAction')
-            ->assert('page', "\d")
+        $blog->get('/archive/{page}', 'blog.controller:getArchiveAction')
+            ->value('page', 1)
+            ->assert('page', "\d+")
             ->bind('blog_get_post_archive');
 
         $blog->get('/rss', 'blog.controller:rssAction')
