@@ -22,27 +22,28 @@ class Controller
         $this->config = $config;
     }
 
-    /**
-     * @todo merge posts and pagedPosts, shouldn't need separate actions
-     */
-    public function postsAction()
+    public function normalizeTag($tag)
     {
-        return new Response(
-            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
-                'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT]),
-                'pageNumber' => 1,
-                'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
-            ))
-        );
+        $tags = $this->postManager->getTags();
+
+        foreach ($tags as $tagArray) {
+            if ($tag == $tagArray['slug'] || $tag == $tagArray['name']) {
+                $normalizedTag = $tagArray['name'];
+
+                return $tagArray['name'];
+            }
+        }
+
+        return $tag;
     }
 
-    public function pagedPostsAction($page)
+    public function postsAction($page)
     {
         return new Response(
             $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
-                'posts' => $this->postManager->findRecentPosts($this->config['blog.frontpage.post_limit'], $page),
+                'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT], $page),
                 'pageNumber' => $page,
-                'pageCount' => $this->postManager->getPageCount($this->config['blog.frontpage.post_limit'])
+                'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
             ))
         );
     }
@@ -76,36 +77,29 @@ class Controller
 
     public function yearIndexAction($year)
     {
-        return new Response($this->templateEngine->render($this->config['blog.frontpage.template'], array(
+        return new Response($this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
             'posts' => $this->postManager->filter(array('year' => $year))
         )));
     }
 
     public function monthIndexAction($year, $month)
     {
-        return new Response($this->templateEngine->render($this->config['blog.frontpage.template'], array(
+        return new Response($this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
             'posts' => $this->postManager->filter(array('year' => $year, 'month' => $month))
         )));
     }
 
     public function taggedPostsAction($tag)
     {
-        $tags = $this->postManager->getTags();
-        $normalizedTag = $tag;
+        $tag = $this->normalizeTag($tag);
 
-        // search
-        foreach ($tags as $tagArray) {
-            if ($tag == $tagArray['slug'] || $tag == $tagArray['name']) {
-                $normalizedTag = $tagArray['name'];
-                break;
-            }
-        }
-    
-        $posts = $this->postManager->filter(array('tags' => $normalizedTag));
-        $response = new Response($this->templateEngine->render($this->config['blog.tag_page.template'], array(
+        $posts = $this->postManager->filter(array('tags' => $tag));
+
+        $response = new Response($this->templateEngine->render($this->config[Config::TAG_PAGE_TEMPLATE], array(
             'posts' => $posts,
-            'tag' => $normalizedTag
+            'tag' => $tag
         )));
+
         if (count($posts) === 0) {
             $response->setStatusCode(404);
         }
@@ -113,15 +107,15 @@ class Controller
         return $response;
     }
 
-    public function archiveAction()
+    public function archiveAction($page)
     {
-        return new Response($this->templateEngine->render($this->config['blog.frontpage.template'], array(
-            'page_1' => $this->postManager->findRecentPosts($this->config['blog.frontpage.post_limit'], 1),
-            'page_2' => $this->postManager->findRecentPosts($this->config['blog.frontpage.post_limit'], 2),
-            'page_3' => $this->postManager->findRecentPosts($this->config['blog.frontpage.post_limit'], 3),
-            'page_4' => $this->postManager->findRecentPosts($this->config['blog.frontpage.post_limit'], 4),
-            'pageCount' => $this->postManager->getPageCount($this->config['blog.frontpage.post_limit'])
-        )));
+        return new Response(
+            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
+                'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT], $page),
+                'pageNumber' => $page,
+                'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
+            ))
+        );
     }
 
     public function rssAction()
@@ -130,7 +124,7 @@ class Controller
         $response->headers->set('Content-Type', 'application/rss+xml; charset=utf-8');
 
         $response->setContent($this->templateEngine->render($this->config[Config::RSS_TEMPLATE], array(
-            'posts' => $this->postManager->findRecentPosts(10)
+            'posts' => $this->postManager->findRecentPosts($this->config[Config::RSS_POST_LIMIT])
         )));
 
         return $response;
