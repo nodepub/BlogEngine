@@ -1,13 +1,13 @@
 <?php
 
-namespace NodePub\BlogEngine;
+namespace NodePub\BlogEngine\Controller;
 
 use NodePub\BlogEngine\PostManager;
 use NodePub\BlogEngine\Config;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class Controller
+class BlogController
 {
     protected $postManager;
 

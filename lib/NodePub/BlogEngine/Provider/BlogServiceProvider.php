@@ -5,7 +5,7 @@ namespace NodePub\BlogEngine\Provider;
 use Silex\Application;
 use Silex\ServiceProviderInterface;
 use NodePub\BlogEngine\PostManager;
-use NodePub\BlogEngine\Controller;
+use NodePub\BlogEngine\Controller\BlogController;
 use NodePub\BlogEngine\Twig\BlogTwigExtension;
 use NodePub\BlogEngine\Config as Blog;
 
@@ -81,7 +81,7 @@ class BlogServiceProvider implements ServiceProviderInterface
                 )
             );
 
-            return new Controller($app['blog.post_manager'], $app[Blog::TEMPLATE_ENGINE], $config);
+            return new BlogController($app['blog.post_manager'], $app[Blog::TEMPLATE_ENGINE], $config);
         });
     }
 
