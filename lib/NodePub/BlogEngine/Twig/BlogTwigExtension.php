@@ -3,14 +3,24 @@
 namespace NodePub\BlogEngine\Twig;
 
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use NodePub\BlogEngine\PostManager;
 
 class BlogTwigExtension extends \Twig_Extension
 {
-    private $urlGenerator;
+    private $urlGenerator,
+            $postManager;
 
-    public function __construct(UrlGeneratorInterface $urlGenerator)
+    protected $twigEnvironment;
+
+    public function __construct(PostManager $postManager, UrlGeneratorInterface $urlGenerator)
     {
+        $this->postManager = $postManager;
         $this->urlGenerator = $urlGenerator;
+    }
+
+    public function initRuntime(\Twig_Environment $environment)
+    {
+        $this->twigEnvironment = $environment;
     }
 
     public function getName()
@@ -21,9 +31,11 @@ class BlogTwigExtension extends \Twig_Extension
     public function getFunctions()
     {
         return array(
-            'permalink'   => new \Twig_Function_Method($this, 'permalink'),
-            'previous_page_link' => new \Twig_Function_Method($this, 'previousPageLink'),
-            'tag_links'   => new \Twig_Function_Method($this, 'tagLinks'),
+            'blog_permalink'          => new \Twig_Function_Method($this, 'permalink'),
+            'previous_page_link'      => new \Twig_Function_Method($this, 'previousPageLink'),
+            'blog_tag_links'          => new \Twig_Function_Method($this, 'tagLinks'),
+            'blog_recent_posts'       => new \Twig_Function_Method($this, 'recentPosts'),
+            'blog_archive'            => new \Twig_Function_Method($this, 'getArchive'),
         );
     }
 
@@ -57,5 +69,15 @@ class BlogTwigExtension extends \Twig_Extension
         }
         
         return implode(', ', $links);
+    }
+
+    public function recentPosts($count)
+    {
+        return $this->postManager->findRecentPosts($count, 1, false);
+    }
+
+    public function getArchive()
+    {
+        return $this->postManager->getPostArchive();
     }
 }

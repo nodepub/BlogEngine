@@ -1,0 +1,21 @@
+{% extends layout %}
+{% block blog_post_index %}
+    {% for post in posts %}
+        {% include 'post.twig' with {'standalone': false} %}
+    {% else %}
+        <p><strong>No posts were found{% if tag is defined %} for tag: {{ tag }}{% endif %}.</strong></p>
+    {% endfor %}
+
+    {% block post_pagination %}
+        {% if pageCount is defined and pageCount > 1 %}
+            <p class="post_nav">
+                {% if pageNumber is defined and pageNumber < pageCount %}
+                    <a href="{{ path('blog_get_paged_posts', {page: pageNumber + 1}) }}" class="post_prev" title="Older Posts">&larr; Older Posts</a>
+                {% endif %}
+                {% if pageNumber is defined and pageNumber > 1 %}
+                    <a href="{{ previous_page_link(pageNumber) }}" class="post_next" title="Newer Posts">Newer Posts &rarr;</a>
+                {% endif %}
+            </p>
+        {% endif %}
+    {% endblock %}
+{% endblock %}

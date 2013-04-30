@@ -1,0 +1,41 @@
+{% block blog_post %}
+    <article class="post" role="article">
+        {% block blog_post_header %}
+            <header>
+                <h1 class="post_title">{% if standalone == false %}<a href="{{ blog_permalink(post) }}" rel="bookmark" title="Permalink">{% endif %}{{ post.title }}{% if standalone == false %}</a>{% endif %}</h1>
+                <p class="post_date">
+                     <a class="blog_permalink" href="{{ blog_permalink(post) }}" rel="bookmark" title="Permalink"><time datetime="{{ post.timestamp|date('c') }}" pubdate>{{ post.timestamp|date('F j, Y') }}</time></a>
+                </p>
+            </header>
+        {% endblock %}
+
+        {% block blog_post_content %}
+            <div class="post_content">
+                {{ post.content }}
+            </div>
+        {% endblock %}
+
+        {% block blog_post_footer %}
+            <footer class="post_footer">
+                {% block blog_post_tags %}
+                    {% if post.tags is not empty %}
+                        <p class="post_tags">Posted in {{ blog_tag_links(post.tags) }}</p>
+                    {% endif %}
+                {% endblock %}
+                
+                {% block blog_post_pagination %}
+                    {% if standalone %}
+                        <p class="post_nav">
+                            {% if post.prev %}
+                                <a href="{{ blog_permalink(post.prev) }}" class="post_prev" title="Previous Post: {{ post.prev.title }}">&larr; {{ post.prev.title }}</a>
+                            {% endif %}
+                            {% if post.next %}
+                                <a href="{{ blog_permalink(post.next) }}" class="post_next" title="Next Post: {{ post.next.title }}">{{ post.next.title }}  &rarr;</a>
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                {% endblock %}
+            </footer>
+        {% endblock %}
+    </article>
+{% endblock %}

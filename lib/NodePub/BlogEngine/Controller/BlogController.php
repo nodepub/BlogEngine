@@ -40,7 +40,8 @@ class BlogController
     public function postsAction($page)
     {
         return new Response(
-            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
+            $this->templateEngine->render($this->config[Config::INDEX_TEMPLATE], array(
+                'layout' => $this->config[Config::FRONTPAGE_TEMPLATE],
                 'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT], $page),
                 'pageNumber' => $page,
                 'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
@@ -107,13 +108,11 @@ class BlogController
         return $response;
     }
 
-    public function archiveAction($page)
+    public function archiveAction()
     {
         return new Response(
-            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
-                'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT], $page),
-                'pageNumber' => $page,
-                'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
+            $this->templateEngine->render($this->config[Config::ARCHIVE_TEMPLATE], array(
+                'archive' => $this->postManager->getPostArchive()
             ))
         );
     }

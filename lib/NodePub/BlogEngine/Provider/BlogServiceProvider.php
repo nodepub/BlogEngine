@@ -21,13 +21,13 @@ class BlogServiceProvider implements ServiceProviderInterface
     public function register(Application $app)
     {
         $app[Blog::FRONTPAGE_POST_LIMIT] = 10;
-        $app[Blog::FRONTPAGE_TEMPLATE]   = '@default/blog_index.twig';
-        $app[Blog::PERMALINK_TEMPLATE]   = '@default/blog_post.twig';
-        $app[Blog::DEFAULT_TEMPLATE]     = '@default/blog_post.twig';
-        $app[Blog::TAG_PAGE_TEMPLATE]    = '@default/blog_index.twig';
-        $app[Blog::CATEGORY_TEMPLATE]    = '@default/blog_index.twig';
+        $app[Blog::FRONTPAGE_TEMPLATE]   = 'post_index.twig';
+        $app[Blog::PERMALINK_TEMPLATE]   = 'post.twig';
+        $app[Blog::DEFAULT_TEMPLATE]     = 'post.twig';
+        $app[Blog::TAG_PAGE_TEMPLATE]    = 'post_index.twig';
+        $app[Blog::CATEGORY_TEMPLATE]    = 'post_index.twig';
         $app[Blog::RSS_POST_LIMIT]       = 20;
-        $app[Blog::RSS_TEMPLATE]         = '@default/rss.twig';
+        $app[Blog::RSS_TEMPLATE]         = 'rss.twig';
         $app[Blog::RECENT_POSTS_LIMIT]   = 5;
 
         $app[Blog::CONTENT_FILTER] = $app->share(function($app) {
@@ -41,7 +41,17 @@ class BlogServiceProvider implements ServiceProviderInterface
         };
         
         if (isset($app['twig'])) {
-            $app['twig']->addExtension(new BlogTwigExtension($app['url_generator']));
+            $app['twig'] = $app->share($app->extend('twig', function($twig, $app) {
+                $twig->addExtension(new BlogTwigExtension(
+                    $app['blog.post_manager'], 
+                    $app['url_generator']
+                ));
+
+                $path = __DIR__ . '/../Resources/views';
+                $app['twig.loader']->addLoader(new \Twig_Loader_Filesystem($path));
+
+                return $twig;
+            }));
         }
 
         $app['blog.mount_point'] = '/blog';
@@ -57,13 +67,6 @@ class BlogServiceProvider implements ServiceProviderInterface
             return $manager;
         });
 
-        // Create an intermediate for generating urls directly from a post
-        $app['blog.permalink_generator'] = $app->share(function($app) {
-            $postRoute = $app['routes']->get('blog_get_post');
-            $paramKeys = $postRoute->getParams();
-            $app['url_generator']->generate('blog_get_post', $params);
-        });
-
         $app['blog.controller'] = $app->share(function($app) {
             $config = array_replace(
                 Blog::getDefaults(),
@@ -72,6 +75,7 @@ class BlogServiceProvider implements ServiceProviderInterface
                     Blog::FRONTPAGE_TEMPLATE   => $app[Blog::FRONTPAGE_TEMPLATE],
                     Blog::PERMALINK_TEMPLATE   => $app[Blog::PERMALINK_TEMPLATE],
                     Blog::DEFAULT_TEMPLATE     => $app[Blog::DEFAULT_TEMPLATE],
+                    Blog::ARCHIVE_TEMPLATE     => $app[Blog::ARCHIVE_TEMPLATE],
                     Blog::TAG_PAGE_TEMPLATE    => $app[Blog::TAG_PAGE_TEMPLATE],
                     Blog::CATEGORY_TEMPLATE    => $app[Blog::CATEGORY_TEMPLATE],
                     Blog::RSS_POST_LIMIT       => $app[Blog::RSS_POST_LIMIT],
@@ -114,9 +118,7 @@ class BlogServiceProvider implements ServiceProviderInterface
         $blog->get('/tags/{tag}', 'blog.controller:taggedPostsAction')
             ->bind('blog_get_tag_index');
 
-        $blog->get('/archive/{page}', 'blog.controller:getArchiveAction')
-            ->value('page', 1)
-            ->assert('page', "\d+")
+        $blog->get('/archive', 'blog.controller:archiveAction')
             ->bind('blog_get_post_archive');
 
         $blog->get('/rss', 'blog.controller:rssAction')

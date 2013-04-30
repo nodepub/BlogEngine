@@ -394,6 +394,8 @@ class PostManager
 
     /**
      * Given a post id, get the previous and next posts
+     * Because posts are displayed in reverse order,
+     * Next is the newer, and Prev the older
      *
      * @return array
      */
@@ -406,11 +408,11 @@ class PostManager
         for ($count = 0; $count < count($postIds); $count++) { 
             if ($postIds[$count] == $id) {
                 if ($count !== 0) {
-                    $prev = $index->get($postIds[$count - 1]);
+                    $next = $index->get($postIds[$count - 1]);
                 }
 
                 if ($count !== count($postIds) - 1) {
-                    $next = $index->get($postIds[$count + 1]);
+                    $prev = $index->get($postIds[$count + 1]);
                 }
 
                 break;
@@ -462,6 +464,28 @@ class PostManager
         }
 
         return $this->expandPosts($filteredPosts);
+    }
+
+    /**
+     * Sorts the post index into a new arrary
+     * array(2013 => array(12 => array(post1, post2, ...)))
+     * @return array
+     */
+    public function getPostArchive()
+    {
+        $index = $this->getPostIndex();
+        $archive = array();
+        foreach ($index as $post) {
+            if (!isset($archive[$post->year])) {
+                $archive[$post->year] = array();
+            }
+            if (!isset($archive[$post->year][$post->month])) {
+                $archive[$post->year][$post->month] = array();
+            }
+            $archive[$post->year][$post->month][]= $post;
+        }
+
+        return $archive;
     }
     
     /**
