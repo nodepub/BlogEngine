@@ -119,7 +119,7 @@ class BlogServiceProvider implements ServiceProviderInterface
             ->bind('blog_get_tag_index');
 
         $blog->get('/archive', 'blog.controller:archiveAction')
-            ->bind('blog_get_post_archive');
+            ->bind('blog_get_archive');
 
         $blog->get('/rss', 'blog.controller:rssAction')
             ->bind('blog_rss');
