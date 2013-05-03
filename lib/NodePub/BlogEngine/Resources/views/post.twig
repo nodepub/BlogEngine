@@ -22,20 +22,20 @@
                         <p class="post_tags">Posted in {{ blog_tag_links(post.tags) }}</p>
                     {% endif %}
                 {% endblock %}
-                
-                {% block blog_post_pagination %}
-                    {% if standalone %}
-                        <p class="post_nav">
-                            {% if post.prev %}
-                                <a href="{{ blog_permalink(post.prev) }}" class="post_prev" title="Previous Post: {{ post.prev.title }}">&larr; {{ post.prev.title }}</a>
-                            {% endif %}
-                            {% if post.next %}
-                                <a href="{{ blog_permalink(post.next) }}" class="post_next" title="Next Post: {{ post.next.title }}">{{ post.next.title }}  &rarr;</a>
-                            {% endif %}
-                        </p>
-                    {% endif %}
-                {% endblock %}
             </footer>
         {% endblock %}
     </article>
+
+    {% block blog_post_pagination %}
+        {% if standalone %}
+            <p class="post_nav">
+                {% if post.prev %}
+                    <a href="{{ blog_permalink(post.prev) }}" class="post_prev" title="Previous Post: {{ post.prev.title }}">&larr; {{ post.prev.title }}</a>
+                {% endif %}
+                {% if post.next %}
+                    <a href="{{ blog_permalink(post.next) }}" class="post_next" title="Next Post: {{ post.next.title }}">{{ post.next.title }}  &rarr;</a>
+                {% endif %}
+            </p>
+        {% endif %}
+    {% endblock %}
 {% endblock %}
