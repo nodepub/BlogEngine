@@ -17,6 +17,6 @@
         "symfony/yaml"             : "2.1.*"
     },
     "autoload": {
-        "psr-0": { "NodePub\\BlogEngine": "lib/" }
+        "psr-0": { "NodePub\\BlogEngine": "src/" }
     }
 }

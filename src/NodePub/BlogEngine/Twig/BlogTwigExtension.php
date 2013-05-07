@@ -31,11 +31,12 @@ class BlogTwigExtension extends \Twig_Extension
     public function getFunctions()
     {
         return array(
-            'blog_permalink'          => new \Twig_Function_Method($this, 'permalink'),
-            'previous_page_link'      => new \Twig_Function_Method($this, 'previousPageLink'),
-            'blog_tag_links'          => new \Twig_Function_Method($this, 'tagLinks'),
-            'blog_recent_posts'       => new \Twig_Function_Method($this, 'recentPosts'),
-            'blog_archive'            => new \Twig_Function_Method($this, 'getArchive'),
+            'blog_permalink'     => new \Twig_Function_Method($this, 'permalink'),
+            'previous_page_link' => new \Twig_Function_Method($this, 'previousPageLink'),
+            'blog_tag_links'     => new \Twig_Function_Method($this, 'tagLinks'),
+            'blog_recent_posts'  => new \Twig_Function_Method($this, 'recentPosts'),
+            'blog_archive'       => new \Twig_Function_Method($this, 'getArchive'),
+            'blog_tags'          => new \Twig_Function_Method($this, 'getTags'),
         );
     }
 
@@ -79,5 +80,24 @@ class BlogTwigExtension extends \Twig_Extension
     public function getArchive()
     {
         return $this->postManager->getPostArchive();
+    }
+
+    /**
+     * Returns an array of tags and their count
+     */
+    public function getTags()
+    {
+        $tags = $this->postManager->getTags();
+
+        uasort($tags, function($a, $b) {
+
+            if ($a['count'] == $b['count']) {
+                return 0;
+            }
+
+            return ($a['count'] > $b['count']) ? -1 : 1;
+        });
+
+        return $tags;
     }
 }
