@@ -1,4 +1,3 @@
-{% extends layout %}
 {% block blog_post_index %}
     {% for post in posts %}
         {% include 'post.twig' with {'standalone': false} %}
