@@ -1,11 +1,13 @@
 <?php
 
-namespace NodePub\BlogEngine;
+namespace NodePub\BlogEngine\Filter;
+
+use NodePub\BlogEngine\Filter\FilterInterface;
 
 /**
  * Chains other content filters so that they can run in sequence
  */
-class FilterChain
+class FilterChain implements FilterInterface
 {
     protected $filters;
     
@@ -14,7 +16,7 @@ class FilterChain
         $this->filters = $filters;
     }
     
-    public function addFilter($filter)
+    public function addFilter(FilterInterface $filter)
     {
         $this->filters[] = $filter;
     }

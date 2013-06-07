@@ -32,7 +32,7 @@ class BlogServiceProvider implements ServiceProviderInterface
 
         $app[Blog::CONTENT_FILTER] = $app->share(function($app) {
             $markdown = new \dflydev\markdown\MarkdownParser();
-            return new \NodePub\BlogEngine\FilterMarkdown($markdown);
+            return new \NodePub\BlogEngine\Filter\FilterMarkdown($markdown);
         });
 
         # Alias twig by wrapping it in a closure

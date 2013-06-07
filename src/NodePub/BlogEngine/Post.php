@@ -2,6 +2,7 @@
 
 namespace NodePub\BlogEngine;
 
+use NodePub\BlogEngine\Filter\FilterInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 
 /**
@@ -50,7 +51,7 @@ class Post
     /**
      * DI setter for content filter object
      */
-    public function setContentFilter($filter)
+    public function setContentFilter(FilterInterface $filter)
     {
         $this->contentFilter = $filter;
     }

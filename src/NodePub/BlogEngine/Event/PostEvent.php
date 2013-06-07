@@ -1,15 +1,15 @@
 <?php
 
-namespace NodePub\BlogEngine;
+namespace NodePub\BlogEngine\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use NodePub\BlogEngine\Post;
+use NodePub\BlogEngine\PostInterface;
 
 class PostEvent extends Event
 {
     protected $post;
 
-    public function __construct(Post $post)
+    public function __construct(PostInterface $post)
     {
         $this->post = $post;
     }

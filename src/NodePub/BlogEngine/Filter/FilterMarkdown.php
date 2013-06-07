@@ -1,11 +1,13 @@
 <?php
 
-namespace NodePub\BlogEngine;
+namespace NodePub\BlogEngine\Filter;
+
+use NodePub\BlogEngine\Filter\FilterInterface;
 
 /**
  * Converts Markdown text into HTML
  */
-class FilterMarkdown
+class FilterMarkdown implements FilterInterface
 {
     private $parser;
     

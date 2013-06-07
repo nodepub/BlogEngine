@@ -9,19 +9,11 @@ use NodePub\BlogEngine\Post;
 use NodePub\BlogEngine\PostMetaParser as Parser;
 use NodePub\BlogEngine\FilenameFormatter;
 use NodePub\BlogEngine\PermalinkFormatter;
-use NodePub\BlogEngine\PostEvent;
+use NodePub\BlogEngine\Event\PostEvents;
+use NodePub\BlogEngine\Event\PostEvent;
 
 class PostManager
 {
-    const EVENT_PRE_CREATE = 'npblog.pre_create_file';
-    const EVENT_CREATE     = 'npblog.create_file';
-    const EVENT_PRE_SAVE   = 'npblog.pre_save_file';
-    const EVENT_SAVE       = 'npblog.save_file';
-    const EVENT_PRE_MOVE   = 'npblog.pre_move_file';
-    const EVENT_MOVE       = 'npblog.move_file';
-    const EVENT_PRE_DELETE = 'npblog.pre_delete_file';
-    const EVENT_DELETE     = 'npblog.delete_file';
-
     const INDEX_CACHE_FILE = 'npblogPostIndex.json';
 
     protected $sourceDirs;
@@ -204,7 +196,7 @@ class PostManager
     /**
      * Get the first 8 chars of the hashed permalink to use as an id.
      */
-    public function hashPermalink($permalink)
+    protected function hashPermalink($permalink)
     {
         return substr(sha1($permalink), 0, 8);
     }
@@ -339,9 +331,11 @@ class PostManager
     public function findById($id, $expand = true)
     {
         $index = $this->getPostIndex();
-        $postMeta = (object) $index->get($id);
+        $postMeta = $index->get($id);
         
         if ($postMeta) {
+
+            $postMeta = (object) $postMeta;
 
             if ($expand === false) {
                 # return unexpanded post
@@ -554,7 +548,7 @@ class PostManager
      */
     public function renamePostFile(Post $post, $newPath = null)
     {
-        $this->dispatch(self::EVENT_PRE_MOVE, $post);
+        $this->dispatch(PostEvents::PRE_EDIT, $post);
 
         $currentPath = $post->filepath;
         $newPath = isset($newPath) ? $newPath : $this->getFilenameFormatter()->getFilePath($post, dirname($currentPath));
@@ -563,7 +557,7 @@ class PostManager
             rename($currentPath, $newPath);
             $post->filepath = $newPath;
 
-            $this->dispatch(self::EVENT_MOVE, $post);
+            $this->dispatch(PostEvents::EDIT, $post);
             
             return $post;
         } catch (\Exception $e) {
@@ -574,10 +568,9 @@ class PostManager
     /**
      * Writes a Post to a file
      */
-    public function savePost(Post $post, $fileContent)
+    public function persist(Post $post, $fileContent)
     {
-
-        $this->dispatch(self::EVENT_PRE_SAVE, $post);
+        $this->dispatch(PostEvents::PRE_PERSIST, $post);
 
         if (isset($post->filepath)) {
             if ($this->hasRenamedFileProperties($post)) {
@@ -603,7 +596,7 @@ class PostManager
                 $post->id = $this->hashPermalink($post->permalink);
                 $post->filename = basename($post->filepath);
 
-                $this->dispatch(self::EVENT_SAVE, $post);
+                $this->dispatch(PostEvents::PERSIST, $post);
                 
                 return $post;
             }
@@ -625,16 +618,17 @@ class PostManager
      */
     public function deletePost(Post $post)
     {
-        $this->dispatch(self::EVENT_PRE_DELETE, $post);
+        $this->dispatch(PostEvents::PRE_DESTROY, $post);
 
         if (is_file($post->filepath)) {
             try {
                 unlink($post->filepath);
-                $this->dispatch(self::EVENT_DELETE, $post);
                 return true;
             } catch (\Exception $e) {
                 return false;
             }
+
+            $this->dispatch(PostEvents::DESTROY, $post);
         }
         
         return false;
