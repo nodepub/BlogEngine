@@ -9,13 +9,13 @@ namespace NodePub\BlogEngine;
  */
 class FilenameFormatter
 {
-	protected $rootDir;
-	protected $sourceFileExtension;
+    protected $rootDir,
+              $sourceFileExtension;
 
-	function __construct($rootDir, $extension)
+    function __construct($rootDir, $extension)
     {
-    	$this->rootDir = $rootDir;
-    	$this->sourceFileExtension = $extension;
+        $this->rootDir = $rootDir;
+        $this->sourceFileExtension = $extension;
     }
 
     /**
@@ -23,9 +23,9 @@ class FilenameFormatter
      */
     public function getFilePath(Post $post, $dir = null)
     {   
-    	if (is_null($dir)) {
-    		$dir = $this->rootDir . '/' . $post->year;
-    	}
+        if (is_null($dir)) {
+            $dir = $this->rootDir . '/' . $post->year;
+        }
 
         return sprintf('%s/%s-%s-%s-%s.%s',
             $dir,
@@ -38,12 +38,12 @@ class FilenameFormatter
     }
 
     /**
-     * 
+     * Extracts post properties from the filepath of a post.
      */
     public function getPostPropertiesFromFilename($filepath)
     {
-    	$properties = array();
-    	$basename = basename($filepath, '.' . $this->sourceFileExtension);
+        $properties = array();
+        $basename = basename($filepath, '.' . $this->sourceFileExtension);
                 
         preg_match('/(\d{4})-(\d{2})-(\d{2})-(.+)/', $basename, $matches);
 

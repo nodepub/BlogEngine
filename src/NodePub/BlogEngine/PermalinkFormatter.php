@@ -14,10 +14,10 @@ class PermalinkFormatter
      */
     public function getPermalink($post)
     {
-    	if (!isset($post->year) || !isset($post->month) || !isset($post->slug)) {
-    		throw new \Exception("Insufficient parameters for creating permalink.");
-    	}
+        if (!isset($post->year) || !isset($post->month) || !isset($post->slug)) {
+            throw new \Exception("Insufficient parameters for creating permalink.");
+        }
 
-    	return $post->year . '/' . $post->month . '/' . $post->slug;
+        return $post->year . '/' . $post->month . '/' . $post->slug;
     }
 }

@@ -9,7 +9,7 @@
         {"name": "Andrew Gruner", "email": "andrew.gruner@gmail.com"}
     ],
     "require": {
-        "php": ">=5.3.2",
+        "php": ">=5.3.3",
         "dflydev/markdown"         : "1.0.*",
         "doctrine/common"          : ">= 2.3.0, < 2.4.0-beta",
         "symfony/event-dispatcher" : "~2.3",
