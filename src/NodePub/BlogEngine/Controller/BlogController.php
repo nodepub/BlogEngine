@@ -3,7 +3,6 @@
 namespace NodePub\BlogEngine\Controller;
 
 use NodePub\BlogEngine\PostManager;
-use NodePub\BlogEngine\Config;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -40,10 +39,10 @@ class BlogController
     public function postsAction($page)
     {
         return new Response(
-            $this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
-                'posts' => $this->postManager->findRecentPosts($this->config[Config::FRONTPAGE_POST_LIMIT], $page),
+            $this->templateEngine->render($this->config['templates']['frontpage'], array(
+                'posts' => $this->postManager->findRecentPosts($this->config['post_limits']['index_pages'], $page),
                 'pageNumber' => $page,
-                'pageCount' => $this->postManager->getPageCount($this->config[Config::FRONTPAGE_POST_LIMIT])
+                'pageCount' => $this->postManager->getPageCount($this->config['post_limits']['index_pages'])
             ))
         );
     }
@@ -68,7 +67,7 @@ class BlogController
         $post = $this->postManager->findByPermalink($permalink);
         
         return new Response(
-            $this->templateEngine->render($this->config['blog.permalink.template'], array(
+            $this->templateEngine->render($this->config['templates']['post'], array(
                 'node' => array('title' => $post->title),
                 'post' => $post
             ))
@@ -77,14 +76,14 @@ class BlogController
 
     public function yearIndexAction($year)
     {
-        return new Response($this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
+        return new Response($this->templateEngine->render($this->config['templates']['index'], array(
             'posts' => $this->postManager->filter(array('year' => $year))
         )));
     }
 
     public function monthIndexAction($year, $month)
     {
-        return new Response($this->templateEngine->render($this->config[Config::FRONTPAGE_TEMPLATE], array(
+        return new Response($this->templateEngine->render($this->config['templates']['index'], array(
             'posts' => $this->postManager->filter(array('year' => $year, 'month' => $month))
         )));
     }
@@ -95,7 +94,7 @@ class BlogController
 
         $posts = $this->postManager->filter(array('tags' => $tag));
 
-        $response = new Response($this->templateEngine->render($this->config[Config::TAG_PAGE_TEMPLATE], array(
+        $response = new Response($this->templateEngine->render($this->config['templates']['tag_page'], array(
             'posts' => $posts,
             'tag' => $tag
         )));
@@ -110,7 +109,7 @@ class BlogController
     public function archiveAction()
     {
         return new Response(
-            $this->templateEngine->render($this->config[Config::ARCHIVE_TEMPLATE], array(
+            $this->templateEngine->render($this->config['templates']['archive'], array(
                 'archive' => $this->postManager->getPostArchive()
             ))
         );
@@ -121,8 +120,8 @@ class BlogController
         $response = new Response();
         $response->headers->set('Content-Type', 'application/rss+xml; charset=utf-8');
 
-        $response->setContent($this->templateEngine->render($this->config[Config::RSS_TEMPLATE], array(
-            'posts' => $this->postManager->findRecentPosts($this->config[Config::RSS_POST_LIMIT])
+        $response->setContent($this->templateEngine->render($this->config['templates']['rss'], array(
+            'posts' => $this->postManager->findRecentPosts($this->config['post_limits']['rss'])
         )));
 
         return $response;
