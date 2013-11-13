@@ -35,6 +35,9 @@ class BlogServiceProvider implements ServiceProviderInterface
         $app['np.blog.options'] = array();
         $app['np.blog.theme.options'] = array();
         
+        $app['np.blog.mount_point'] = '/blog';
+        $app['np.blog.permalink_format'] = '/{year}/{month}/{slug}';
+        
         $app['np.blog.content_filter'] = $app->share(function($app) {
             $markdown = new \dflydev\markdown\MarkdownParser();
             return new \NodePub\BlogEngine\Filter\FilterMarkdown($markdown);
@@ -58,9 +61,6 @@ class BlogServiceProvider implements ServiceProviderInterface
                 return $twig;
             }));
         }
-
-        $app['np.blog.mount_point'] = '/blog';
-        $app['np.blog.permalink_format'] = '/{year}/{month}/{slug}';
         
         $app['np.blog.processed_options'] = $app->share(function($app) {
             $processor = new Processor();
@@ -83,9 +83,9 @@ class BlogServiceProvider implements ServiceProviderInterface
             return $manager;
         });
 
-        $app['blog.controller'] = $app->share(function($app) {
+        $app['np.blog.controller'] = $app->share(function($app) {
             return new BlogController(
-                $app['blog.post_manager'],
+                $app['np.blog.post_manager'],
                 $app['np.blog.template.engine'],
                 $app['np.blog.processed_options']
             );
@@ -96,42 +96,42 @@ class BlogServiceProvider implements ServiceProviderInterface
     {
         $blog = $app['controllers_factory'];
 
-        $blog->get('/', 'blog.controller:postsAction')
+        $blog->get('/', 'np.blog.controller:postsAction')
             ->bind('blog_get_posts')
             ->value('page', 1);
 
-        $blog->get('/page/{page}', 'blog.controller:postsAction')
+        $blog->get('/page/{page}', 'np.blog.controller:postsAction')
             ->assert('page', "\d")
             ->bind('blog_get_paged_posts');
 
-        $blog->get($app['blog.permalink_format'], 'blog.controller:postAction')
+        $blog->get($app['np.blog.permalink_format'], 'np.blog.controller:postAction')
             ->assert('year', "\d\d\d\d")
             ->assert('month', "\d\d")
             ->bind('blog_get_post');
 
-        $blog->get('/{year}', 'blog.controller:yearIndexAction')
+        $blog->get('/{year}', 'np.blog.controller:yearIndexAction')
             ->assert('year', "\d\d\d\d")
             ->bind('blog_get_year_index');
 
-        $blog->get('/{year}/{month}', 'blog.controller:monthIndexAction')
+        $blog->get('/{year}/{month}', 'np.blog.controller:monthIndexAction')
             ->assert('year', "\d\d\d\d")
             ->assert('month', "\d\d")
             ->bind('blog_get_month_index');
 
-        $blog->get('/tags/{tag}', 'blog.controller:taggedPostsAction')
+        $blog->get('/tags/{tag}', 'np.blog.controller:taggedPostsAction')
             ->bind('blog_get_tag_index');
 
-        $blog->get('/archive', 'blog.controller:archiveAction')
+        $blog->get('/archive', 'np.blog.controller:archiveAction')
             ->bind('blog_get_archive');
 
-        $blog->get('/rss', 'blog.controller:rssAction')
+        $blog->get('/rss', 'np.blog.controller:rssAction')
             ->bind('blog_rss');
 
         // mount blog controllers
-        $app->mount($app['blog.mount_point'], $blog);
+        $app->mount($app['np.blog.mount_point'], $blog);
 
         // create an index redirect
-        $app->get($app['blog.mount_point'], function() use ($app) {
+        $app->get($app['np.blog.mount_point'], function() use ($app) {
             return $app->redirect($app['url_generator']->generate('blog_get_posts'));
         });
     }
