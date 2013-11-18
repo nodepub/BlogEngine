@@ -8,19 +8,21 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 class BlogConfiguration implements ConfigurationInterface
 {
     // Internal templates
-    const INDEX_TEMPLATE_NAME  = 'post_index.twig';
-    const POST_TEMPLATE_NAME   = 'post.twig';
-    const RSS_TEMPLATE_NAME    = 'rss.twig';
+    const TEMPLATE_NAMESPACE   = 'np_blog';
+    const INDEX_TEMPLATE_NAME  = '@np_blog/post_index.twig';
+    const POST_TEMPLATE_NAME   = '@np_blog/post.twig';
+    const RSS_TEMPLATE_NAME    = '@np_blog/rss.twig';
     
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('np.blog');
+        $rootNode = $treeBuilder->root('blog');
         
         $rootNode
             ->children()
                 
                 ->arrayNode('post_limits')
+                    ->addDefaultsIfNotSet()
                     ->children()
                         ->integerNode('index_pages')
                             ->defaultValue(20)
@@ -38,31 +40,27 @@ class BlogConfiguration implements ConfigurationInterface
                 ->end()
                 
                 ->arrayNode('templates')
+                    ->addDefaultsIfNotSet()
                     ->children()
-                        ->scalarNode('default')
-                            ->defaultValue(self::POST_TEMPLATE_NAME)
-                        ->end()
-                        ->scalarNode('permalink')
-                            ->defaultValue(self::POST_TEMPLATE_NAME)
-                        ->end()
                         ->scalarNode('index')
                             ->defaultValue(self::INDEX_TEMPLATE_NAME)
                         ->end()
-                        ->scalarNode('frontpage')
-                            ->defaultValue(self::INDEX_TEMPLATE_NAME)
+                        ->scalarNode('post')
+                            ->defaultValue(self::POST_TEMPLATE_NAME)
                         ->end()
-                        ->scalarNode('archive')
-                            ->defaultValue(self::INDEX_TEMPLATE_NAME)
-                        ->end()
-                        ->scalarNode('tag_page')
+                        ->scalarNode('tags')
                             ->defaultValue(self::INDEX_TEMPLATE_NAME)
                         ->end()
                         ->scalarNode('category')
                             ->defaultValue(self::INDEX_TEMPLATE_NAME)
                         ->end()
+                        ->scalarNode('archive')
+                            ->defaultValue(self::INDEX_TEMPLATE_NAME)
+                        ->end()
                         ->scalarNode('rss')
                             ->defaultValue(self::RSS_TEMPLATE_NAME)
                         ->end()
+
                     ->end()
                 ->end()
             ->end()

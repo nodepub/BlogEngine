@@ -55,10 +55,18 @@ class BlogServiceProvider implements ServiceProviderInterface
                     $app['url_generator']
                 ));
 
-                $path = __DIR__ . '/../Resources/views';
-                $app['twig.loader']->addLoader(new \Twig_Loader_Filesystem($path));
-
                 return $twig;
+            }));
+        }
+        
+        if (isset($app['twig.loader.filesystem'])) {
+            $app['twig.loader.filesystem'] = $app->share($app->extend('twig.loader.filesystem', function($twigLoader, $app) {
+                $twigLoader->addPath(
+                    __DIR__ . '/../Resources/views',
+                    BlogConfiguration::TEMPLATE_NAMESPACE
+                );
+
+                return $twigLoader;
             }));
         }
         
