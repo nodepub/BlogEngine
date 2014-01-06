@@ -1,6 +1,8 @@
 {% block blog_post_index %}
     {% for post in posts %}
-        {% include '@np_blog/post.twig' with {'standalone': false} %}
+        {% block blog_post %}
+            {% include '@np_blog/post.twig' with {'standalone': false} %}
+        {% endblock %}
     {% else %}
         <p><strong>No posts were found{% if tag is defined %} for tag: {{ tag }}{% endif %}.</strong></p>
     {% endfor %}

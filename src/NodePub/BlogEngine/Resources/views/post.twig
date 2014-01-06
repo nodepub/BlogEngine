@@ -11,7 +11,9 @@
 
         {% block blog_post_content %}
             <div class="post_content">
+                {% block blog_post_before_content %}{% endblock %}
                 {{ post.content }}
+                {% block blog_post_after_content %}{% endblock %}
             </div>
         {% endblock %}
 
