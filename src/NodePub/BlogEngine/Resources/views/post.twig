@@ -1,5 +1,5 @@
 {% block blog_post %}
-    <article class="post" role="article">
+    <article id="post-{{ post.slug }}" class="post" role="article">
         {% block blog_post_header %}
             <header>
                 <h1 class="post_title">{% if standalone == false %}<a href="{{ blog_permalink(post) }}" rel="bookmark" title="Permalink">{% endif %}{{ post.title }}{% if standalone == false %}</a>{% endif %}</h1>
