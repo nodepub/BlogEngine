@@ -11,26 +11,28 @@ use NodePub\BlogEngine\FilenameFormatter;
 use NodePub\BlogEngine\PermalinkFormatter;
 use NodePub\BlogEngine\Event\PostEvents;
 use NodePub\BlogEngine\Event\PostEvent;
+use NodePub\Common\Trait\SourceDirectoryAwareInterface;
+use NodePub\Common\Trait\SourceDirectoryAwareTrait;
 
-class PostManager
+class PostManager implements SourceDirectoryAwareInterface
 {
+    use SourceDirectoryAwareTrait;
+    
     const INDEX_CACHE_FILE = 'npblogPostIndex.json';
 
-    protected $sourceDirs;
-    protected $postIndex;
-    protected $tags;
-    protected $taggings;
-    protected $contentFilter;
-    protected $sourceFileExtension;
-    protected $permalinkFormatter;
-    protected $filenameFormatter;
-    protected $eventDispatcher;
-    protected $postIndexCacheFile;
+    protected $postIndex,
+              $tags,
+              $taggings,
+              $contentFilter,
+              $sourceFileExtension,
+              $permalinkFormatter,
+              $filenameFormatter,
+              $eventDispatcher,
+              $postIndexCacheFile;
   
     function __construct($sourceDirs)
     {
         # initialize params with defaults
-        $this->sourceDirs = array();
         $this->sourceFileExtension = 'txt';
         
         if (is_array($sourceDirs)) {
@@ -43,24 +45,6 @@ class PostManager
 
         # set default cache file location
         $this->setCacheDirectory($this->sourceDirs[0]);
-    }
-    
-    /**
-     * Adds a directory to the array of sources that will
-     * be searched for post files.
-     */
-    public function addSource($sourcePath)
-    {
-        if (is_link($sourcePath)) {
-            $this->addSource(realpath($sourcePath));
-            return;
-        }
-        
-        if (is_dir($sourcePath)) {
-            $this->sourceDirs[] = $sourcePath;
-        } else {
-            throw new \Exception(sprintf('Source path "%s" is not a readable directory', $sourcePath));
-        }
     }
 
     /**
@@ -166,10 +150,7 @@ class PostManager
             ->name('*.' . $this->sourceFileExtension)
             ;
         
-        # add all source paths to the finder
-        foreach ($this->sourceDirs as $dir) {
-           $files->in($dir);
-        }
+        $files = $this->findInSourceDirs($files);
         
         # orders posts by date
         $files->sortByName();
