@@ -9,10 +9,10 @@
         {"name": "Andrew Gruner", "email": "andrew.gruner@gmail.com"}
     ],
     "require": {
-        "php": ">=5.3.3",
+        "php": ">=5.4",
         "dflydev/markdown"         : "1.0.*",
         "doctrine/common"          : ">= 2.3.0, < 2.4.0-beta",
-        "nodepub/common"           : "dev",
+        "nodepub/common"           : "*",
         "symfony/config"           : "~2.3",
         "symfony/event-dispatcher" : "~2.3",
         "symfony/finder"           : "~2.3",
