@@ -11,8 +11,8 @@ use NodePub\BlogEngine\FilenameFormatter;
 use NodePub\BlogEngine\PermalinkFormatter;
 use NodePub\BlogEngine\Event\PostEvents;
 use NodePub\BlogEngine\Event\PostEvent;
-use NodePub\Common\Trait\SourceDirectoryAwareInterface;
-use NodePub\Common\Trait\SourceDirectoryAwareTrait;
+use NodePub\Common\SourceDirectoryAwareInterface;
+use NodePub\Common\SourceDirectoryAwareTrait;
 
 class PostManager implements SourceDirectoryAwareInterface
 {
