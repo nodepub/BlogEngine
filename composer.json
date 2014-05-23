@@ -12,7 +12,7 @@
         "php": ">=5.4",
         "dflydev/markdown"         : "1.0.*",
         "doctrine/common"          : ">= 2.3.0, < 2.4.0-beta",
-        "nodepub/common"           : "*",
+        "nodepub/common"           : "dev-master",
         "symfony/config"           : "~2.3",
         "symfony/event-dispatcher" : "~2.3",
         "symfony/finder"           : "~2.3",
